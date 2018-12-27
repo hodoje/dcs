@@ -1,0 +1,70 @@
+from PyQt5.QtCore import QTimer, pyqtSlot, QObject, QBasicTimer
+from PyQt5.QtWidgets import QGraphicsRectItem
+
+from Client.DirectionEnum import Direction
+
+
+class Bullet(QGraphicsRectItem):
+    def __init__(self, movingDirection):
+        super().__init__()
+        self.movingDirection = movingDirection
+        self.__init_ui__()
+        # call 'move' every 50ms
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.move)
+        self.timer.start(10)
+
+    def __init_ui__(self):
+        # draw the bullet
+        if self.movingDirection == Direction.RIGHT or self.movingDirection == Direction.LEFT:
+            self.setRect(0, 0, 50, 10)
+        elif self.movingDirection == Direction.DOWN or self.movingDirection == Direction.UP:
+            self.setRect(0, 0, 10, 50)
+
+    # movements
+    def moveRight(self):
+        self.setPos(self.x() + 2, self.y())
+
+    def moveLeft(self):
+        self.setPos(self.x() - 2, self.y())
+
+    def moveDown(self):
+        self.setPos(self.x(), self.y() + 2)
+
+    def moveUp(self):
+        self.setPos(self.x(), self.y() - 2)
+
+    # call particular move
+    def move(self):
+        # set movement
+        if self.movingDirection == Direction.RIGHT:
+            self.moveRight()
+        elif self.movingDirection == Direction.LEFT:
+            self.moveLeft()
+        elif self.movingDirection == Direction.DOWN:
+            self.moveDown()
+        elif self.movingDirection == Direction.UP:
+            self.moveUp()
+
+        # delete the bullet after it goes of the scene
+        # NOTE the different shape of the bullet based on the direction
+        if self.movingDirection == Direction.RIGHT:
+            if self.pos().x() > self.scene().width():
+                self.scene().removeItem(self)
+                del self
+                print("delete right")
+        elif self.movingDirection == Direction.LEFT:
+            if self.pos().x() + self.rect().width() < 0:
+                self.scene().removeItem(self)
+                del self
+                print("delete left")
+        elif self.movingDirection == Direction.DOWN:
+            if self.pos().y() > self.scene().height():
+                self.scene().removeItem(self)
+                del self
+                print("delete down")
+        elif self.movingDirection == Direction.UP:
+            if self.pos().y() + self.rect().height() < 0:
+                self.scene().removeItem(self)
+                del self
+                print("delete up")
