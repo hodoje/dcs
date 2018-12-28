@@ -1,9 +1,7 @@
 import sys
-from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtWidgets import QApplication, QWidget, QGraphicsScene, QMainWindow, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 
-from Client.Board import Board
-from Client.Tank import Tank
+from Client.board import Board
 
 
 class GameStart(QMainWindow):
@@ -15,6 +13,7 @@ class GameStart(QMainWindow):
     def __init_ui__(self):
         self.board = Board()
         self.setCentralWidget(self.board)
+        self.setWindowTitle("Battle City")
         self.center()
 
     def center(self):

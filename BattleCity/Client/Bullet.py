@@ -1,10 +1,11 @@
-from PyQt5.QtCore import QTimer, pyqtSlot, QObject, QBasicTimer
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from Client.DirectionEnum import Direction
+from Client.directionEnum import Direction
 
 
-class Bullet(QGraphicsRectItem):
+class Bullet(QGraphicsPixmapItem):
     def __init__(self, movingDirection):
         super().__init__()
         self.movingDirection = movingDirection
@@ -16,10 +17,14 @@ class Bullet(QGraphicsRectItem):
 
     def __init_ui__(self):
         # draw the bullet
-        if self.movingDirection == Direction.RIGHT or self.movingDirection == Direction.LEFT:
-            self.setRect(0, 0, 50, 10)
-        elif self.movingDirection == Direction.DOWN or self.movingDirection == Direction.UP:
-            self.setRect(0, 0, 10, 50)
+        if self.movingDirection == Direction.RIGHT:
+            self.setPixmap(QPixmap("Resources/Images/bulletRight.png"))
+        elif self.movingDirection == Direction.LEFT:
+            self.setPixmap(QPixmap("Resources/Images/bulletLeft.png"))
+        elif self.movingDirection == Direction.DOWN:
+            self.setPixmap(QPixmap("Resources/Images/bulletDown.png"))
+        elif self.movingDirection == Direction.UP:
+            self.setPixmap(QPixmap("Resources/Images/bulletUp.png"))
 
     # movements
     def moveRight(self):
@@ -54,7 +59,7 @@ class Bullet(QGraphicsRectItem):
                 del self
                 print("delete right")
         elif self.movingDirection == Direction.LEFT:
-            if self.pos().x() + self.rect().width() < 0:
+            if self.pos().x() + self.boundingRect().width() < 0:
                 self.scene().removeItem(self)
                 del self
                 print("delete left")
@@ -64,7 +69,7 @@ class Bullet(QGraphicsRectItem):
                 del self
                 print("delete down")
         elif self.movingDirection == Direction.UP:
-            if self.pos().y() + self.rect().height() < 0:
+            if self.pos().y() + self.boundingRect().height() < 0:
                 self.scene().removeItem(self)
                 del self
                 print("delete up")
