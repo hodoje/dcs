@@ -14,8 +14,8 @@ class Player(QGraphicsPixmapItem):
 
     def __init_ui__(self):
         # set up player textures and refresh rate
-        self.texture1 = QPixmap("Resources/Images/yellowFP.v8.png")
-        self.texture2 = QPixmap("Resources/Images/yellowSP.v8.png")
+        self.texture1 = QPixmap("Resources/Images/greenFP.v8.png")
+        self.texture2 = QPixmap("Resources/Images/greenSP.v8.png")
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = True
         self.textureTimer = QTimer()
