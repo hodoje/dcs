@@ -2,9 +2,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QBrush
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
 
-from Client.firingNotifier import FiringNotifier
-from Client.movementNotifier import MovementNotifier
-from Client.player import Player
+from firingNotifier import FiringNotifier
+from movementNotifier import MovementNotifier
+from player import Player
 
 
 class Board(QGraphicsView):

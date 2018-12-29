@@ -2,7 +2,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from Client.directionEnum import Direction
+from directionEnum import Direction
 
 
 class Bullet(QGraphicsPixmapItem):

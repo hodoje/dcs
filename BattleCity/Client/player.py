@@ -1,8 +1,8 @@
 from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-from Client.bullet import Bullet
-from Client.directionEnum import Direction
+from bullet import Bullet
+from directionEnum import Direction
 
 
 class Player(QGraphicsPixmapItem):
@@ -14,8 +14,8 @@ class Player(QGraphicsPixmapItem):
 
     def __init_ui__(self):
         # set up player textures and refresh rate
-        self.texture1 = QPixmap("Resources/Images/yellowFP.v7.png")
-        self.texture2 = QPixmap("Resources/Images/yellowSP.v7.png")
+        self.texture1 = QPixmap("Resources/Images/yellowFP.v8.png")
+        self.texture2 = QPixmap("Resources/Images/yellowSP.v8.png")
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = True
         self.textureTimer = QTimer()
