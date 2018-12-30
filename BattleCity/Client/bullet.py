@@ -6,9 +6,10 @@ from directionEnum import Direction
 
 
 class Bullet(QGraphicsPixmapItem):
-    def __init__(self, movingDirection):
+    def __init__(self, movingDirection, player):
         super().__init__()
         self.movingDirection = movingDirection
+        self.player = player
         self.__init_ui__()
         # call 'move' every 50ms
         self.timer = QTimer()
@@ -18,13 +19,13 @@ class Bullet(QGraphicsPixmapItem):
     def __init_ui__(self):
         # draw the bullet
         if self.movingDirection == Direction.RIGHT:
-            self.setPixmap(QPixmap("Resources/Images/bulletRight.png"))
+            self.setPixmap(QPixmap("Resources/Images/Bullets/bulletRight.png"))
         elif self.movingDirection == Direction.LEFT:
-            self.setPixmap(QPixmap("Resources/Images/bulletLeft.png"))
+            self.setPixmap(QPixmap("Resources/Images/Bullets/bulletLeft.png"))
         elif self.movingDirection == Direction.DOWN:
-            self.setPixmap(QPixmap("Resources/Images/bulletDown.png"))
+            self.setPixmap(QPixmap("Resources/Images/Bullets/bulletDown.png"))
         elif self.movingDirection == Direction.UP:
-            self.setPixmap(QPixmap("Resources/Images/bulletUp.png"))
+            self.setPixmap(QPixmap("Resources/Images/Bullets/bulletUp.png"))
 
     # movements
     def moveRight(self):
@@ -56,20 +57,24 @@ class Bullet(QGraphicsPixmapItem):
         if self.movingDirection == Direction.RIGHT:
             if self.pos().x() > self.scene().width():
                 self.scene().removeItem(self)
+                self.player.announceCanShoot(True)
                 del self
                 print("delete right")
         elif self.movingDirection == Direction.LEFT:
             if self.pos().x() + self.boundingRect().width() < 0:
                 self.scene().removeItem(self)
+                self.player.announceCanShoot(True)
                 del self
                 print("delete left")
         elif self.movingDirection == Direction.DOWN:
             if self.pos().y() > self.scene().height():
                 self.scene().removeItem(self)
+                self.player.announceCanShoot(True)
                 del self
                 print("delete down")
         elif self.movingDirection == Direction.UP:
             if self.pos().y() + self.boundingRect().height() < 0:
                 self.scene().removeItem(self)
+                self.player.announceCanShoot(True)
                 del self
                 print("delete up")

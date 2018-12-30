@@ -1,37 +1,51 @@
-from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF, pyqtSignal
+from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtWidgets import QGraphicsObject
 from bullet import Bullet
 from directionEnum import Direction
 
 
-class Player(QGraphicsPixmapItem):
+class Player(QGraphicsObject):
+    canShootSignal = pyqtSignal(int)
+
     def __init__(self):
         super().__init__()
         self.canonDirection = Direction.UP
-        self.m_boundingRect = QRectF(0, 0, 40.0, 40.0)
+        self.canShoot = True
+        self.level = 1
         self.__init_ui__()
 
     def __init_ui__(self):
         # set up player textures and refresh rate
-        self.texture1 = QPixmap("Resources/Images/greenFP.v8.png")
-        self.texture2 = QPixmap("Resources/Images/greenSP.v8.png")
+        self.texture1 = QPixmap("Resources/Images/Tanks/Green/greenFP.v8.png")
+        self.texture2 = QPixmap("Resources/Images/Tanks/Green/greenSP.v8.png")
         self.textures = [self.texture2, self.texture1]
-        self.isFirstTexture = True
+        self.isFirstTexture = 1
         self.textureTimer = QTimer()
         self.textureTimer.timeout.connect(self.updateUi)
         self.textureTimer.start(100)
 
-        self.setPixmap(self.texture1)
+        #self.setPixmap(self.texture1)
         self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
 
     # override default bounding rect
     def boundingRect(self):
-        return self.m_boundingRect
+        m_boundingRect = QRectF(0, 0, self.texture1.width(), self.texture1.height())
+        return m_boundingRect
+
+    def paint(self, QPainter: QPainter, QStyleOptionGraphicsItem, QWidget):
+        if self.isFirstTexture:
+            QPainter.drawPixmap(0, 0, self.texture1.width(), self.texture1.height(), self.texture1)
+        else:
+            QPainter.drawPixmap(0, 0, self.texture2.width(), self.texture2.height(), self.texture2)
 
     def updateUi(self):
-        self.setPixmap(self.textures[self.isFirstTexture])
-        self.isFirstTexture = ~self.isFirstTexture
+        self.isFirstTexture = not self.isFirstTexture
+        # self.update() will schedule a paint event on the parent QGraphicsView
+        # so paint won't execute immediately
+        self.update()
+        #self.setPixmap(self.textures[self.isFirstTexture])
+        #self.isFirstTexture = ~self.isFirstTexture
 
     # movement
     def moveRight(self):
@@ -85,21 +99,28 @@ class Player(QGraphicsPixmapItem):
                 self.canonDirection = Direction.UP
 
     def fireCanon(self, key):
-        if key == Qt.Key_Space:
-            # create the bullet
-            bullet = Bullet(self.canonDirection)
-            # set the bullet in the center of the tank
-            # 0.4 is the 40% aspect ration of the width/height of the tank so the bullet
-            # (with its width/height will be in the middle)
-            # magic numbers are based on the size of the image itself and the black margin
-            # between the image end and the tank object itself in that image
-            if self.canonDirection == Direction.UP:
-                bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() - 15)
-            elif self.canonDirection == Direction.DOWN:
-                bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() + self.boundingRect().height() + 5)
-            elif self.canonDirection == Direction.LEFT:
-                bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.4)
-            elif self.canonDirection == Direction.RIGHT:
-                bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.4)
-            # add the bullet to the scene
-            self.scene().addItem(bullet)
+        if self.canShoot:
+            if key == Qt.Key_Space:
+                # create the bullet
+                bullet = Bullet(self.canonDirection, self)
+                self.canShoot = False
+                self.announceCanShoot(False)
+                # set the bullet in the center of the tank
+                # 0.4 is the 40% aspect ration of the width/height of the tank so the bullet
+                # (with its width/height will be in the middle)
+                # magic numbers are based on the size of the image itself and the black margin
+                # between the image end and the tank object itself in that image
+                if self.canonDirection == Direction.UP:
+                    bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() - 15)
+                elif self.canonDirection == Direction.DOWN:
+                    bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() + self.boundingRect().height() + 5)
+                elif self.canonDirection == Direction.LEFT:
+                    bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.4)
+                elif self.canonDirection == Direction.RIGHT:
+                    bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.4)
+                # add the bullet to the scene
+                self.scene().addItem(bullet)
+
+    def announceCanShoot(self, canShoot):
+        self.canShoot = True
+        self.canShootSignal.emit(canShoot)

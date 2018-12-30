@@ -11,19 +11,20 @@ class Board(QGraphicsView):
     def __init__(self):
         super().__init__()
 
+        self.__init_ui__()
+
         # set up a movement and firing notifier
         self.movemeNotifier = MovementNotifier(0.015)
         self.movemeNotifier.movementSignal.connect(self.updatePosition)
         self.movemeNotifier.start()
 
-        self.firingNotifier = FiringNotifier(0.5)
+        self.firingNotifier = FiringNotifier(0.000001)
         self.firingNotifier.firingSignal.connect(self.fireCanon)
         self.firingNotifier.start()
+        self.player.canShootSignal.connect(self.allowFiring)
 
         self.firingKey = Qt.Key_Space
         self.movementKeys = [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]
-
-        self.__init_ui__()
 
     def __init_ui__(self):
         # set up the scene
@@ -70,3 +71,7 @@ class Board(QGraphicsView):
     def closeEvent(self, event):
         self.movemeNotifier.die()
         self.firingNotifier.die()
+
+    def allowFiring(self, canEmit):
+        #print(canEmit)
+        self.firingNotifier.canEmit = canEmit

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, QWaitCondition, QMutex
 import time
 
 
@@ -15,6 +15,8 @@ class FiringNotifier(QObject):
         self.thread = QThread()
         self.moveToThread(self.thread)
         self.thread.started.connect(self.__work__)
+
+        self.canEmit = True
 
     def start(self):
         self.thread.start()
@@ -33,6 +35,7 @@ class FiringNotifier(QObject):
     @pyqtSlot()
     def __work__(self):
         while not self.is_done:
-            for k in self.keys:
-                self.firingSignal.emit(k)
+            if self.canEmit:
+                for k in self.keys:
+                    self.firingSignal.emit(k)
             time.sleep(self.workerSleep)
