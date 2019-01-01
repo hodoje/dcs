@@ -1,8 +1,8 @@
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from directionEnum import Direction
+from Client.directionEnum import Direction
 
 
 class Bullet(QGraphicsPixmapItem):
@@ -13,6 +13,7 @@ class Bullet(QGraphicsPixmapItem):
         self.__init_ui__()
         # call 'move' every 50ms
         self.timer = QTimer()
+        self.timer.setTimerType(Qt.PreciseTimer)
         self.timer.timeout.connect(self.move)
         self.timer.start(10)
 

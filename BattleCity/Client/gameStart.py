@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 
-from board import Board
+from Client.board import Board
 
 
 class GameStart(QMainWindow):

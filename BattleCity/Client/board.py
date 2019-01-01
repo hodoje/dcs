@@ -1,10 +1,10 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPainter, QBrush
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
 
-from firingNotifier import FiringNotifier
-from movementNotifier import MovementNotifier
-from player import Player
+from Client.firingNotifier import FiringNotifier
+from Client.movementNotifier import MovementNotifier
+from Client.player import Player
 
 
 class Board(QGraphicsView):
@@ -14,13 +14,12 @@ class Board(QGraphicsView):
         self.__init_ui__()
 
         # set up a movement and firing notifier
-        self.movemeNotifier = MovementNotifier(0.015)
+        self.movemeNotifier = MovementNotifier(0.05)
         self.movemeNotifier.movementSignal.connect(self.updatePosition)
         self.movemeNotifier.start()
 
-        self.firingNotifier = FiringNotifier(0.000001)
+        self.firingNotifier = FiringNotifier(50)
         self.firingNotifier.firingSignal.connect(self.fireCanon)
-        self.firingNotifier.start()
         self.player.canShootSignal.connect(self.allowFiring)
 
         self.firingKey = Qt.Key_Space
@@ -50,14 +49,14 @@ class Board(QGraphicsView):
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key_Space:
+        if key == self.firingKey:
             self.firingNotifier.add_key(key)
         elif key in self.movementKeys:
             self.movemeNotifier.add_key(key)
 
     def keyReleaseEvent(self, event):
         key = event.key()
-        if key == Qt.Key_Space:
+        if key == self.firingKey:
             self.firingNotifier.remove_key(key)
         elif key in self.movementKeys:
             self.movemeNotifier.remove_key(key)
@@ -68,10 +67,8 @@ class Board(QGraphicsView):
     def fireCanon(self, key):
         self.player.fireCanon(key)
 
+    def allowFiring(self, canEmit):
+        self.firingNotifier.canEmit = canEmit
+
     def closeEvent(self, event):
         self.movemeNotifier.die()
-        self.firingNotifier.die()
-
-    def allowFiring(self, canEmit):
-        #print(canEmit)
-        self.firingNotifier.canEmit = canEmit
