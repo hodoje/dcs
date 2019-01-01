@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QThread, QObject, pyqtSignal
 import time
 
 
@@ -14,7 +14,7 @@ class MovementNotifier(QObject):
 
         self.thread = QThread()
         self.moveToThread(self.thread)
-        self.thread.started.connect(self.__work__)
+        self.thread.started.connect(self.emitKey)
 
     def start(self):
         self.thread.start()
@@ -29,18 +29,15 @@ class MovementNotifier(QObject):
         self.is_done = True
         self.thread.quit()
 
-    @pyqtSlot()
-    def __work__(self):
+    def emitKey(self):
         while not self.is_done:
-            #keys = self.keys[:]
-            #if keys:
-                # mainKey will be the first key that was registered in the next iteration after sleep
-                # with that, moving in only one direction at a time will be possible
-                #mainKey = keys[0]
-                #movementKeys = [k for k in keys if k == mainKey]
-                #if movementKeys:
             keys = self.keys[:]
             if keys:
+                # mainKey will be the first key that was registered
+                # if any other key was pressed they will be omitted
+                # with that, moving only in one direction at a time will be possible
+                # NOTE: when holding a key (although add_key is called on the board, only one element will be
+                # in the self.keys list)
                 mainKey = keys[0]
                 movementKeys = [k for k in keys if k == mainKey]
                 if movementKeys:

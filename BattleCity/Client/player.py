@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF, pyqtSignal
-from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtGui import QPainter, QImage
 from PyQt5.QtWidgets import QGraphicsObject
+
 from bullet import Bullet
 from directionEnum import Direction
 
@@ -8,47 +9,59 @@ from directionEnum import Direction
 class Player(QGraphicsObject):
     canShootSignal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, color, firingKey, movementKeys):
         super().__init__()
+        # set up interaction keys
+        self.firingKey = firingKey
+        self.movementKeys = movementKeys
+
+        # player color
+        self.color = color
+
+        # initial cannon direction
         self.canonDirection = Direction.UP
+
+        # used to determine if player can shoot
+        # initially is true, set to false when a bullet is fired, then set to true after bullet is destroyed
+        # will probably be changed in the future
+        # NOTE: this flag is NOT necessary to work properly but will stay here for possible future uses
         self.canShoot = True
+
+        # initial player that will (hope so) be used in the future
         self.level = 1
+
         self.__init_ui__()
 
     def __init_ui__(self):
-        # set up player textures and refresh rate
-        self.texture1 = QPixmap("Resources/Images/Tanks/Red/redFP.v4.png")
-        self.texture2 = QPixmap("Resources/Images/Tanks/Red/redSP.v4.png")
+        # set up player textures, refresh rate and transformation origin point
+        self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.level}.png")
+        self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.level}.png")
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = 1
         self.textureTimer = QTimer()
         self.textureTimer.setTimerType(Qt.PreciseTimer)
         self.textureTimer.timeout.connect(self.updateUi)
         self.textureTimer.start(100)
-
-        #self.setPixmap(self.texture1)
         self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
 
     # override default bounding rect
     def boundingRect(self):
-        m_boundingRect = QRectF(0, 0, self.texture1.width(), self.texture1.height())
-        return m_boundingRect
+        return QRectF(0, 0, self.texture1.width(), self.texture1.height())
 
+    # override default paint
     def paint(self, QPainter: QPainter, QStyleOptionGraphicsItem, QWidget):
         if self.isFirstTexture:
-            QPainter.drawPixmap(0, 0, self.texture1.width(), self.texture1.height(), self.texture1)
+            QPainter.drawImage(0, 0, self.texture1)
         else:
-            QPainter.drawPixmap(0, 0, self.texture2.width(), self.texture2.height(), self.texture2)
+            QPainter.drawImage(0, 0, self.texture2)
 
     def updateUi(self):
         self.isFirstTexture = not self.isFirstTexture
         # self.update() will schedule a paint event on the parent QGraphicsView
         # so paint won't execute immediately
         self.update()
-        #self.setPixmap(self.textures[self.isFirstTexture])
-        #self.isFirstTexture = ~self.isFirstTexture
 
-    # movement
+    # movements
     def moveRight(self):
         self.setX(self.x() + 5)
 
@@ -61,7 +74,7 @@ class Player(QGraphicsObject):
     def moveUp(self):
         self.setY(self.y() - 5)
 
-    # rotate to a direction
+    # rotations
     def rotate(self, nextDirection):
         if nextDirection == Direction.RIGHT:
             self.setRotation(90)
@@ -74,37 +87,37 @@ class Player(QGraphicsObject):
 
     def updatePosition(self, key):
         # before each move check if move is possible
-        if key == Qt.Key_Right:
+        if key == self.movementKeys["Right"]:
             if self.pos().x() + self.boundingRect().width() < self.scene().width():
                 self.moveRight()
                 if not self.canonDirection == Direction.RIGHT:
                     self.rotate(Direction.RIGHT)
                 self.canonDirection = Direction.RIGHT
-        elif key == Qt.Key_Left:
+        elif key == self.movementKeys["Left"]:
             if self.pos().x() > 0:
                 self.moveLeft()
                 if not self.canonDirection == Direction.LEFT:
                     self.rotate(Direction.LEFT)
                 self.canonDirection = Direction.LEFT
-        elif key == Qt.Key_Down:
+        elif key == self.movementKeys["Down"]:
             if self.pos().y() + self.boundingRect().height() < self.scene().height():
                 self.moveDown()
                 if not self.canonDirection == Direction.DOWN:
                     self.rotate(Direction.DOWN)
                 self.canonDirection = Direction.DOWN
-        elif key == Qt.Key_Up:
+        elif key == self.movementKeys["Up"]:
             if self.pos().y() > 0:
                 self.moveUp()
                 if not self.canonDirection == Direction.UP:
                     self.rotate(Direction.UP)
                 self.canonDirection = Direction.UP
 
-    def fireCanon(self, key):
+    def fire(self, key):
         if self.canShoot:
-            if key == Qt.Key_Space:
+            if key == self.firingKey:
                 # create the bullet
                 bullet = Bullet(self.canonDirection, self)
-                self.canShoot = False
+                # announce that the player can't shoot until the bullet calls this function again
                 self.announceCanShoot(False)
                 # set the bullet in the center of the tank
                 # 0.4 is the 40% aspect ration of the width/height of the tank so the bullet
@@ -122,6 +135,9 @@ class Player(QGraphicsObject):
                 # add the bullet to the scene
                 self.scene().addItem(bullet)
 
+    # this function will signal the board that the player can shoot
+    # which will then set up the firing notifier flag that it can emit shooting keys
+    # back to the board and the board will call the players fire function
     def announceCanShoot(self, canShoot):
-        self.canShoot = True
+        self.canShoot = canShoot
         self.canShootSignal.emit(canShoot)

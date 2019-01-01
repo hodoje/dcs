@@ -1,24 +1,28 @@
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
-
 from Client.directionEnum import Direction
 
 
 class Bullet(QGraphicsPixmapItem):
     def __init__(self, movingDirection, player):
         super().__init__()
+        # moving direction determines what picture is used for the bullet
         self.movingDirection = movingDirection
+        # reference to a player so a bullet can call player.announceCanShoot function
+        # to signal that will signal the board that the player can shoot again
         self.player = player
-        self.__init_ui__()
+
         # call 'move' every 50ms
         self.timer = QTimer()
         self.timer.setTimerType(Qt.PreciseTimer)
         self.timer.timeout.connect(self.move)
         self.timer.start(10)
 
+        self.__init_ui__()
+
     def __init_ui__(self):
-        # draw the bullet
+        # draw the bullet based on direction
         if self.movingDirection == Direction.RIGHT:
             self.setPixmap(QPixmap("Resources/Images/Bullets/bulletRight.png"))
         elif self.movingDirection == Direction.LEFT:
@@ -60,22 +64,18 @@ class Bullet(QGraphicsPixmapItem):
                 self.scene().removeItem(self)
                 self.player.announceCanShoot(True)
                 del self
-                print("delete right")
         elif self.movingDirection == Direction.LEFT:
             if self.pos().x() + self.boundingRect().width() < 0:
                 self.scene().removeItem(self)
                 self.player.announceCanShoot(True)
                 del self
-                print("delete left")
         elif self.movingDirection == Direction.DOWN:
             if self.pos().y() > self.scene().height():
                 self.scene().removeItem(self)
                 self.player.announceCanShoot(True)
                 del self
-                print("delete down")
         elif self.movingDirection == Direction.UP:
             if self.pos().y() + self.boundingRect().height() < 0:
                 self.scene().removeItem(self)
                 self.player.announceCanShoot(True)
                 del self
-                print("delete up")
