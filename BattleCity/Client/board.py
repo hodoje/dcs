@@ -22,18 +22,16 @@ class Board(QGraphicsView):
         self.__init_ui__()
 
         # set up a movement and firing notifier for player1
-        self.movemeNotifier = MovementNotifier(0.05)
+        self.movemeNotifier = MovementNotifier(50)
         self.movemeNotifier.movementSignal.connect(self.updatePosition)
-        self.movemeNotifier.start()
 
         self.firingNotifier = FiringNotifier(50)
         self.firingNotifier.firingSignal.connect(self.fireCanon)
         self.player.canShootSignal.connect(self.allowFiring)
 
         # set up a movement and firing notifier for player2
-        self.movemeNotifier2 = MovementNotifier(0.05)
+        self.movemeNotifier2 = MovementNotifier(50)
         self.movemeNotifier2.movementSignal.connect(self.updatePosition)
-        self.movemeNotifier2.start()
 
         self.firingNotifier2 = FiringNotifier(50)
         self.firingNotifier2.firingSignal.connect(self.fireCanon2)
@@ -109,7 +107,3 @@ class Board(QGraphicsView):
 
     def allowFiring2(self, canEmit):
         self.firingNotifier2.canEmit = canEmit
-
-    def closeEvent(self, event):
-        self.movemeNotifier.die()
-        self.movemeNotifier2.die()
