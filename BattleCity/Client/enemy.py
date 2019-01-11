@@ -48,8 +48,8 @@ class Enemy(QGraphicsItem):
         # set up player textures, refresh rate and transformation origin point
         self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.type}.png")
         self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.type}.png")
-        self.width = 40
-        self.height = 40
+        self.width = self.texture1.width()
+        self.height = self.texture1.height()
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = 1
         self.textureTimer = QTimer()
@@ -198,13 +198,13 @@ class Enemy(QGraphicsItem):
         # magic numbers are based on the size of the image itself and the black margin
         # between the image end and the tank object itself in that image
         if self.canonDirection == Direction.UP:
-            bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() - 15)
+            bullet.setPos(self.x() + self.boundingRect().width() * 0.37, self.y() - 15)
         elif self.canonDirection == Direction.DOWN:
-            bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() + self.boundingRect().height() + 5)
+            bullet.setPos(self.x() + self.boundingRect().width() * 0.37, self.y() + self.boundingRect().height() + 5)
         elif self.canonDirection == Direction.LEFT:
-            bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.4)
+            bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.37)
         elif self.canonDirection == Direction.RIGHT:
-            bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.4)
+            bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.37)
         # add the bullet to the scene
         self.scene().addItem(bullet)
 

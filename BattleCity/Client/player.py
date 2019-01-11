@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, QTimer, Qt, QPoint, QRectF
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPainterPath
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsRectItem
 
 from directionEnum import Direction
@@ -9,7 +9,7 @@ from bullet import Bullet
 class Player(QGraphicsObject):
     canShootSignal = pyqtSignal(int)
 
-    def __init__(self, color, firingKey, movementKeys, field, killEmitter, bulletTimer, targetType):
+    def __init__(self, color, firingKey, movementKeys, field, killEmitter, bulletTimer, targetType, lvl):
         super().__init__()
         # player color
         self.color = color
@@ -31,7 +31,7 @@ class Player(QGraphicsObject):
         self.canShoot = True
 
         # initial player that will (hope so) be used in the future
-        self.level = 2
+        self.level = lvl
 
         self.__init_ui__()
 
@@ -166,18 +166,18 @@ class Player(QGraphicsObject):
                 # announce that the player can't shoot until the bullet calls this function again
                 self.announceCanShoot(False)
                 # set the bullet in the center of the tank
-                # 0.4 is the 40% aspect ration of the width/height of the tank so the bullet
+                # 0.37 is the 37% aspect ration of the width/height of the tank so the bullet
                 # (with its width/height will be in the middle)
                 # magic numbers are based on the size of the image itself and the black margin
                 # between the image end and the tank object itself in that image
                 if self.canonDirection == Direction.UP:
-                    bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() - 15)
+                    bullet.setPos(self.x() + self.boundingRect().width() * 0.37, self.y() - 15)
                 elif self.canonDirection == Direction.DOWN:
-                    bullet.setPos(self.x() + self.boundingRect().width() * 0.4, self.y() + self.boundingRect().height() + 5)
+                    bullet.setPos(self.x() + self.boundingRect().width() * 0.37, self.y() + self.boundingRect().height() + 5)
                 elif self.canonDirection == Direction.LEFT:
-                    bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.4)
+                    bullet.setPos(self.x() - 15, self.y() + self.boundingRect().height() * 0.37)
                 elif self.canonDirection == Direction.RIGHT:
-                    bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.4)
+                    bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.37)
                 # add the bullet to the scene
                 self.scene().addItem(bullet)
 

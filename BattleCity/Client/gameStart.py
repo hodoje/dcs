@@ -14,6 +14,7 @@ class GameStart(QMainWindow):
         self.board = Board()
         self.setCentralWidget(self.board)
         self.setWindowTitle("Battle City")
+        self.setFixedSize(660, 570)
         self.center()
 
     def center(self):
