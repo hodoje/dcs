@@ -46,8 +46,8 @@ class Enemy(QGraphicsItem):
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
-        self.texture1 = QImage(f"Resources/Images/Tanks/yellow/yellowFP.v1.png")
-        self.texture2 = QImage(f"Resources/Images/Tanks/yellow/yellowSP.v1.png")
+        self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.type}.png")
+        self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.type}.png")
         self.width = 40
         self.height = 40
         self.textures = [self.texture2, self.texture1]
