@@ -1,22 +1,25 @@
-from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF, pyqtSignal
-from PyQt5.QtGui import QPainter, QImage
-from PyQt5.QtWidgets import QGraphicsObject
+from PyQt5.QtCore import pyqtSignal, QTimer, Qt, QPoint, QRectF
+from PyQt5.QtGui import QImage
+from PyQt5.QtWidgets import QGraphicsObject, QGraphicsRectItem
 
-from bullet import Bullet
 from directionEnum import Direction
+from bullet import Bullet
 
 
 class Player(QGraphicsObject):
     canShootSignal = pyqtSignal(int)
 
-    def __init__(self, color, firingKey, movementKeys):
+    def __init__(self, color, firingKey, movementKeys, field, killEmitter, bulletTimer, targetType):
         super().__init__()
+        # player color
+        self.color = color
         # set up interaction keys
         self.firingKey = firingKey
         self.movementKeys = movementKeys
-
-        # player color
-        self.color = color
+        self.field = field
+        self.killEmitter = killEmitter
+        self.bulletTimer = bulletTimer
+        self.targetType = targetType
 
         # initial cannon direction
         self.canonDirection = Direction.UP
@@ -28,14 +31,18 @@ class Player(QGraphicsObject):
         self.canShoot = True
 
         # initial player that will (hope so) be used in the future
-        self.level = 1
+        self.level = 2
 
         self.__init_ui__()
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
+        # textures are .png images 40px x 40px
         self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.level}.png")
         self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.level}.png")
+        self.height = self.texture1.height()
+        self.width = self.texture1.width()
+        self.m_boundingRect = QRectF(0, 0, self.width, self.height)
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = 1
         self.textureTimer = QTimer()
@@ -46,10 +53,10 @@ class Player(QGraphicsObject):
 
     # override default bounding rect
     def boundingRect(self):
-        return QRectF(0, 0, self.texture1.width(), self.texture1.height())
+        return self.m_boundingRect
 
     # override default paint
-    def paint(self, QPainter: QPainter, QStyleOptionGraphicsItem, QWidget):
+    def paint(self, QPainter, QStyleOptionGraphicsItem, QWidget):
         if self.isFirstTexture:
             QPainter.drawImage(0, 0, self.texture1)
         else:
@@ -63,56 +70,95 @@ class Player(QGraphicsObject):
 
     # movements
     def moveRight(self):
-        self.setX(self.x() + 5)
+        self.setX(self.x() + 1)
 
     def moveLeft(self):
-        self.setX(self.x() - 5)
+        self.setX(self.x() - 1)
 
     def moveDown(self):
-        self.setY(self.y() + 5)
+        self.setY(self.y() + 1)
 
     def moveUp(self):
-        self.setY(self.y() - 5)
+        self.setY(self.y() - 1)
 
-    # rotations
-    def rotate(self, nextDirection):
-        if nextDirection == Direction.RIGHT:
+    # rotations, absolute degrees
+    def rotate(self, direction):
+        if direction == Direction.RIGHT:
             self.setRotation(90)
-        elif nextDirection == Direction.LEFT:
+        elif direction == Direction.LEFT:
             self.setRotation(-90)
-        elif nextDirection == Direction.DOWN:
+        elif direction == Direction.DOWN:
             self.setRotation(180)
-        elif nextDirection == Direction.UP:
+        elif direction == Direction.UP:
             self.setRotation(0)
 
+    def canMove(self, direction):
+        canMove = True
+        allObjects = self.scene().items()
+        x1 = self.x()
+        y1 = self.y()
+        if direction == Direction.RIGHT:
+            x1 += 1
+        elif direction == Direction.LEFT:
+            x1 -= 1
+        elif direction == Direction.DOWN:
+            y1 += 1
+        elif direction == Direction.UP:
+            y1 -= 1
+        x2 = x1 + self.width
+        y2 = y1 + self.height
+
+        for obj in allObjects:
+            # skip the field object and self
+            if type(obj) != QGraphicsRectItem and self != obj:
+                objX1 = obj.x()
+                objY1 = obj.y()
+                objX2 = objX1 + obj.boundingRect().width()
+                objY2 = objY1 + obj.boundingRect().height()
+                if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
+                    canMove = False
+                    break
+        return canMove
+
+    # NOTE: on 'Right' and 'Down' you will notice that there is a magic '-1'
+    # it's there because there is some reason the bounding rect of the field will be
+    # one pixel larger than the defined size
     def updatePosition(self, key):
         # before each move check if move is possible
         if key == self.movementKeys["Right"]:
-            if self.pos().x() + self.boundingRect().width() < self.scene().width():
-                self.moveRight()
-                if not self.canonDirection == Direction.RIGHT:
-                    self.rotate(Direction.RIGHT)
-                self.canonDirection = Direction.RIGHT
+            # check if the element is on the edge of the field
+            if self.pos().x() + self.width < self.field.x() + self.field.boundingRect().width() - 1:
+                if self.canMove(Direction.RIGHT):
+                    # else move in the desired direction
+                    self.moveRight()
+                    # check if the canon is facing the desired direction
+                    # if not, rotate to it and set the direction
+                    if not self.canonDirection == Direction.RIGHT:
+                        self.rotate(Direction.RIGHT)
+                    self.canonDirection = Direction.RIGHT
         elif key == self.movementKeys["Left"]:
-            if self.pos().x() > 0:
-                self.moveLeft()
-                if not self.canonDirection == Direction.LEFT:
-                    self.rotate(Direction.LEFT)
-                self.canonDirection = Direction.LEFT
+            if self.pos().x() > self.field.x():
+                if self.canMove(Direction.LEFT):
+                    self.moveLeft()
+                    if not self.canonDirection == Direction.LEFT:
+                        self.rotate(Direction.LEFT)
+                    self.canonDirection = Direction.LEFT
         elif key == self.movementKeys["Down"]:
-            if self.pos().y() + self.boundingRect().height() < self.scene().height():
-                self.moveDown()
-                if not self.canonDirection == Direction.DOWN:
-                    self.rotate(Direction.DOWN)
-                self.canonDirection = Direction.DOWN
+            if self.pos().y() + self.height < self.field.y() + self.field.boundingRect().height() - 1:
+                if self.canMove(Direction.DOWN):
+                    self.moveDown()
+                    if not self.canonDirection == Direction.DOWN:
+                        self.rotate(Direction.DOWN)
+                    self.canonDirection = Direction.DOWN
         elif key == self.movementKeys["Up"]:
-            if self.pos().y() > 0:
-                self.moveUp()
-                if not self.canonDirection == Direction.UP:
-                    self.rotate(Direction.UP)
-                self.canonDirection = Direction.UP
+            if self.pos().y() > self.field.y():
+                if self.canMove(Direction.UP):
+                    self.moveUp()
+                    if not self.canonDirection == Direction.UP:
+                        self.rotate(Direction.UP)
+                    self.canonDirection = Direction.UP
 
-    def fire(self, key):
+    def shoot(self, key):
         if self.canShoot:
             if key == self.firingKey:
                 # create the bullet

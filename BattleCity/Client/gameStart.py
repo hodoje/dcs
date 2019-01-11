@@ -1,7 +1,7 @@
 import sys
+import PyQt5
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
-
-from Client.board import Board
+from board import Board
 
 
 class GameStart(QMainWindow):
@@ -20,7 +20,7 @@ class GameStart(QMainWindow):
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2,
-                  (screen.height() - size.height()) / 2)
+                  (screen.height() - size.height()) / 2 - 100)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
