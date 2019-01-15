@@ -11,22 +11,22 @@ class MovementNotifier(QObject):
         self.keys = []
         self.is_done = False
 
-        self.timerInterval = timerInterval
-        self.timer = QTimer()
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.emit)
-        self.timer.start(self.timerInterval)
-
-        # code for using threads
-        # self.thread = QThread()
         # self.timerInterval = timerInterval
         # self.timer = QTimer()
         # self.timer.setTimerType(Qt.PreciseTimer)
         # self.timer.timeout.connect(self.emit)
-        # self.timer.moveToThread(self.thread)
-        # self.timer.setInterval(self.timerInterval)
-        # self.thread.started.connect(self.timer.start)
-        # self.thread.start()
+        # self.timer.start(self.timerInterval)
+
+        # code for using threads
+        self.thread = QThread()
+        self.timerInterval = timerInterval
+        self.timer = QTimer()
+        self.timer.setTimerType(Qt.PreciseTimer)
+        self.timer.timeout.connect(self.emit)
+        self.moveToThread(self.thread)
+        self.timer.setInterval(self.timerInterval)
+        self.thread.started.connect(self.timer.start)
+        self.thread.start()
 
     def add_key(self, key):
         self.keys.append(key)

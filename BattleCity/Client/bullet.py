@@ -2,6 +2,12 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 from directionEnum import Direction
+from killEmitter import KillEmitData
+from block import Block
+from blockTypeEnum import BlockType
+from base import Base
+
+import sip
 
 
 class Bullet(QGraphicsPixmapItem):
@@ -13,12 +19,9 @@ class Bullet(QGraphicsPixmapItem):
         # to signal that will signal the board that the player can shoot again
         self.owner = owner
 
-        # call 'move' every 50ms
-        #self.timer = QTimer()
-        #self.timer.setTimerType(Qt.PreciseTimer)
+        # movement timer
         self.timer = self.owner.bulletTimer
         self.timer.timeout.connect(self.move)
-        #self.timer.start(10)
 
         self.__init_ui__()
 
@@ -35,16 +38,16 @@ class Bullet(QGraphicsPixmapItem):
 
     # movements
     def moveRight(self):
-        self.setPos(self.x() + 3, self.y())
+        self.setPos(self.x() + self.owner.bulletSpeed, self.y())
 
     def moveLeft(self):
-        self.setPos(self.x() - 3, self.y())
+        self.setPos(self.x() - self.owner.bulletSpeed, self.y())
 
     def moveDown(self):
-        self.setPos(self.x(), self.y() + 3)
+        self.setPos(self.x(), self.y() + self.owner.bulletSpeed)
 
     def moveUp(self):
-        self.setPos(self.x(), self.y() - 3)
+        self.setPos(self.x(), self.y() - self.owner.bulletSpeed)
 
     # call particular move
     def move(self):
@@ -64,6 +67,7 @@ class Bullet(QGraphicsPixmapItem):
             if self.pos().x() > self.owner.field.x() + self.owner.field.boundingRect().width():
                 self.scene().removeItem(self)
                 self.owner.announceCanShoot(True)
+                sip.delete(self)
                 del self
             # if 1 colliding item will always be the scene's field property
             else:
@@ -72,23 +76,52 @@ class Bullet(QGraphicsPixmapItem):
                     for obj in collidingItems:
                         oType = type(obj)
                         # react only if it's an owners targetType or a Bullet
-                        if oType == self.owner.targetType or oType == Bullet:
-                            self.scene().removeItem(obj)
-                            # if it's a target then emit a kill
+                        if oType == self.owner.targetType or oType == Bullet or oType == Block or oType == Base:
+                            # remove the object and do additional job according to the object type
                             if oType == self.owner.targetType:
-                                self.owner.killEmitter.emitKillSignal.emit(obj)
-                            # if it's a bullet tell the other side that it can shoot
-                            if oType == Bullet:
+                                # if it's a target then emit a kill
+                                killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                                self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                                # remove the bullet
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Bullet:
+                                # if it's a bullet tell the other side that it can shoot
+                                self.scene().removeItem(obj)
                                 obj.owner.announceCanShoot(True)
-                            del obj
-                            self.scene().removeItem(self)
-                            self.owner.announceCanShoot(True)
-                            del self
+                                # remove the bullet
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Block:
+                                # handle different types of blocks
+                                if obj.type == BlockType.brick:
+                                    self.scene().removeItem(obj)
+                                    del obj
+                                    # remove the bullet
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                                elif obj.type == BlockType.steel:
+                                    # remove the bullet
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                                else:
+                                    pass
+                            elif oType == Base:
+                                self.owner.gameOverEmitter.gameOverSignal.emit(1)
                             return
         elif self.movingDirection == Direction.LEFT:
             if self.pos().x() + self.boundingRect().width() < self.owner.field.x():
                 self.scene().removeItem(self)
                 self.owner.announceCanShoot(True)
+                sip.delete(self)
                 del self
             # if 1 colliding item will always be the scene's field property
             else:
@@ -96,21 +129,43 @@ class Bullet(QGraphicsPixmapItem):
                 if len(collidingItems) > 1:
                     for obj in collidingItems:
                         oType = type(obj)
-                        if oType == self.owner.targetType or oType == Bullet:
-                            self.scene().removeItem(obj)
+                        if oType == self.owner.targetType or oType == Bullet or oType == Block or oType == Base:
                             if oType == self.owner.targetType:
-                                self.owner.killEmitter.emitKillSignal.emit(obj)
-                            if oType == Bullet:
+                                killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                                self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Bullet:
+                                self.scene().removeItem(obj)
                                 obj.owner.announceCanShoot(True)
-                            del obj
-                            self.scene().removeItem(self)
-                            self.owner.announceCanShoot(True)
-                            del self
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Block:
+                                if obj.type == BlockType.brick:
+                                    self.scene().removeItem(obj)
+                                    sip.delete(obj)
+                                    del obj
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                                elif obj.type == BlockType.steel:
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                            elif oType == Base:
+                                self.owner.gameOverEmitter.gameOverSignal.emit(1)
                             return
         elif self.movingDirection == Direction.DOWN:
             if self.pos().y() > self.owner.field.y() + self.owner.field.boundingRect().height():
                 self.scene().removeItem(self)
                 self.owner.announceCanShoot(True)
+                sip.delete(self)
                 del self
             # if 1 colliding item will always be the scene's field property
             else:
@@ -118,21 +173,43 @@ class Bullet(QGraphicsPixmapItem):
                 if len(collidingItems) > 1:
                     for obj in collidingItems:
                         oType = type(obj)
-                        if oType == self.owner.targetType or oType == Bullet:
-                            self.scene().removeItem(obj)
+                        if oType == self.owner.targetType or oType == Bullet or oType == Block or oType == Base:
                             if oType == self.owner.targetType:
-                                self.owner.killEmitter.emitKillSignal.emit(obj)
-                            if oType == Bullet:
+                                killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                                self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Bullet:
+                                self.scene().removeItem(obj)
                                 obj.owner.announceCanShoot(True)
-                            del obj
-                            self.scene().removeItem(self)
-                            self.owner.announceCanShoot(True)
-                            del self
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Block:
+                                if obj.type == BlockType.brick:
+                                    self.scene().removeItem(obj)
+                                    sip.delete(obj)
+                                    del obj
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                                elif obj.type == BlockType.steel:
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                            elif oType == Base:
+                                self.owner.gameOverEmitter.gameOverSignal.emit(1)
                             return
         elif self.movingDirection == Direction.UP:
             if self.pos().y() + self.boundingRect().height() < self.owner.field.y():
                 self.scene().removeItem(self)
                 self.owner.announceCanShoot(True)
+                sip.delete(self)
                 del self
             # if 1 colliding item will always be the scene's field property
             else:
@@ -140,14 +217,34 @@ class Bullet(QGraphicsPixmapItem):
                 if len(collidingItems) > 1:
                     for obj in collidingItems:
                         oType = type(obj)
-                        if oType == self.owner.targetType or oType == Bullet:
-                            self.scene().removeItem(obj)
+                        if oType == self.owner.targetType or oType == Bullet or oType == Block or oType == Base:
                             if oType == self.owner.targetType:
-                                self.owner.killEmitter.emitKillSignal.emit(obj)
-                            if oType == Bullet:
+                                killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                                self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Bullet:
+                                self.scene().removeItem(obj)
                                 obj.owner.announceCanShoot(True)
-                            del obj
-                            self.scene().removeItem(self)
-                            self.owner.announceCanShoot(True)
-                            del self
+                                self.scene().removeItem(self)
+                                self.owner.announceCanShoot(True)
+                                sip.delete(self)
+                                del self
+                            elif oType == Block:
+                                if obj.type == BlockType.brick:
+                                    self.scene().removeItem(obj)
+                                    del obj
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                                elif obj.type == BlockType.steel:
+                                    self.scene().removeItem(self)
+                                    self.owner.announceCanShoot(True)
+                                    sip.delete(self)
+                                    del self
+                            elif oType == Base:
+                                self.owner.gameOverEmitter.gameOverSignal.emit(1)
                             return

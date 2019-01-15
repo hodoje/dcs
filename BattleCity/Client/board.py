@@ -1,5 +1,4 @@
-from PyQt5.QtCore import Qt, QRectF, QTimer
-from PyQt5.QtGui import QBrush, QPen
+from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 
@@ -9,79 +8,126 @@ from movementNotifier import MovementNotifier
 from player import Player
 from enemy import Enemy
 from block import Block
+from base import Base
+from enemyTankDetailsFactory import EnemyTankDetailsFactory
+from blockTypeEnum import BlockType
+from gameOver import GameOver
+from gameOverEmitter import GameOverEmitter
+from playerDeadEmitter import PlayerDeadEmitter
+from playerWrapper import PlayerWrapper
+
 import random
+import sip
 
 
 class Board(QGraphicsView):
-    def __init__(self):
+    def __init__(self, config, currentMap, menuToMainWindowData):
         super().__init__()
 
+        self.config = config
+        self.currentMap = currentMap
+        self.menuToMainWindowData = menuToMainWindowData
         # set up player and enemy details
         self.playerColors = ["yellow", "green"]
-        self.numOfPlayers = 2
-        self.enemyColors = ["gray"]
-        self.enemyTypes = [5, 6, 7, 8]
-        self.enemies = []
+        self.playerLevels = self.config.playerLevels
+        self.numOfPlayers = self.menuToMainWindowData.numOfPlayers
+        self.playerWrappers = {}
+        self.enemyColor = "gray"
+        self.enemiesEtds = {}
+        self.enemies = {}
         self.enemySpawnInterval = 3000
-        self.enemiesPerLevel = {1: 15, 2: 20, 3: 25, 4: 30, 5: 35}
-        self.currentLevel = 1
+        self.maxEnemyCnt = 20
         self.currentEnemyCnt = 0
-        self.currentEnemyMaxCnt = self.enemiesPerLevel[self.currentLevel]
         self.maxEnemiesCurrentlyAlive = 6
         self.enemiesCurrentlyAlive = 0
-        # all enemies will react to this timer timeout
-        self.enemyTimer = QTimer()
-        self.enemyTimer.setTimerType(Qt.PreciseTimer)
-        self.enemyTimer.start(10)
 
-        # all bullets will react to this timer timeout
-        self.bulletTimer = QTimer()
-        self.bulletTimer.setTimerType(Qt.PreciseTimer)
-        self.bulletTimer.start(10)
+        # ENEMY MOVEMENT TIMERS
+        self.enemyMovementTimers = {}
+        self.slowEnemyMovementTimer = QTimer()
+        self.slowEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
+        self.slowEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["slow"])
+        self.enemyMovementTimers["slow"] = self.slowEnemyMovementTimer
 
-        # player1 keys
-        self.firingKey = Qt.Key_Space
-        self.movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
+        self.normalEnemyMovementTimer = QTimer()
+        self.normalEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
+        self.normalEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["normal"])
+        self.enemyMovementTimers["normal"] = self.normalEnemyMovementTimer
 
-        # player2 keys
-        self.firingKey1 = Qt.Key_J
-        self.movementKeys1 = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
+        self.fastEnemyMovementTimer = QTimer()
+        self.fastEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
+        self.fastEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["fast"])
+        self.enemyMovementTimers["fast"] = self.fastEnemyMovementTimer
 
-        # each player and enemy will have this emitter passed to them
-        # and will give it to each bullet so the bullet can signal when an enemy has been killed
-        self.killEmitter = KillEmitter()
-        self.killEmitter.emitKillSignal.connect(self.enemyKiller)
+        # ENEMY SHOOTING TIMERS
+        self.enemyShootingTimer = QTimer()
+        self.enemyShootingTimer.setTimerType(Qt.PreciseTimer)
+        self.enemyShootingTimer.start(self.config.enemyShootInterval)
 
-        self.__init_ui__()
-        self.generatePlayers()
-        self.setUpPlayerSlots()
-
-        # random enemy positions
-        # 40 is the size of the enemy tank
-        self.randomEnemyPositions = [
-            self.field.x()
-            # self.field.x() + self.field.width() / 2 + 0.5,
-            # self.field.x() + self.field.width() - 38
-        ]
-
+        # SET UP RANDOM ENEMY SPAWNING TIMER
         self.enemySpawnTimer = QTimer()
         self.enemySpawnTimer.setTimerType(Qt.PreciseTimer)
         self.enemySpawnTimer.timeout.connect(self.generateEnemy)
         self.enemySpawnTimer.start(self.enemySpawnInterval)
 
-    # INITIALIZATION
+        # BULLET REFRESH RATE
+        # i've chose not to make different timers for different speeds just to save
+        # on resources and computational power
+        # difference from tank movement is that tanks constantly move by 1px
+        # and bullets don't need to so we change the number of pixel as the movement pace for bullets
+        self.bulletTimer = QTimer()
+        self.bulletTimer.setTimerType(Qt.PreciseTimer)
+        self.bulletTimer.start(10)
+
+        # movement gameOverAnimation timer
+        self.animationTimer = QTimer()
+        self.animationTimer.setTimerType(Qt.PreciseTimer)
+        self.animationTimer.start(100)
+
+        # each player and enemy will have this emitter passed to them
+        # and will give it to each bullet so the bullet can signal when an enemy has been killed
+        self.killEmitter = KillEmitter()
+        self.killEmitter.emitKillSignal.connect(self.killEmitterHandler)
+
+        # initialize board ui
+        self.__init_ui__()
+
+        # 34 is the max width of the enemy tank
+        self.randomEnemyPositions = [
+            self.field.x(),
+            self.field.x() + (self.field.boundingRect().width() - 1) / 2,
+            # '-34' doesn't let enemies spawn outside the field
+            self.field.x() + self.field.boundingRect().width() - 34
+        ]
+
+        # player dead emitter
+        self.playerDeadEmitter = PlayerDeadEmitter()
+        self.playerDeadEmitter.playerDeadSignal.connect(self.playerDeadEmitterHandler)
+
+        # GAME OVER
+        self.gameOverEmitter = GameOverEmitter()
+        self.gameOverEmitter.gameOverSignal.connect(self.gameOverHandler)
+        # game over animation
+        # we need to keep the gameOverAnimation alive so it can animate
+        self.gameOver = GameOver(self.config.gameOverTexture)
+        self.gameOverAnimation = QPropertyAnimation(self.gameOver, b"pos")
+        self.gameOverAnimation.setDuration(3000)
+        # for some reason the first position stays so i've put it under the view boundary
+        self.gameOverAnimation.setStartValue(QPointF(150, self.fieldBottom + 50))
+        self.gameOverAnimation.setEndValue(QPointF(150, 150))
+
+        self.generateEtd()
+        self.generatePlayers()
+
+    # UI INITIALIZATION
     def __init_ui__(self):
         # set up the scene
         self.scene = QGraphicsScene()
-        # first two zeros are x and y in regard to the containing view
-        # this resolution gives us 15 rows and 20 columns for object of size 40x40px
-        self.scene.setSceneRect(0, 0, 800, 700)
+        # these 10 subtracted pixels are for the margin
+        self.scene.setSceneRect(0, 0, self.config.mainWindowSize["width"] - 10, self.config.mainWindowSize["height"] - 10)
         self.scene.setBackgroundBrush(Qt.darkGray)
-
         # set up the view
         self.setScene(self.scene)
-        # these 10 additional pixels are for the margin
-        self.setFixedSize(810, 710)
+        self.setFixedSize(self.config.mainWindowSize["width"], self.config.mainWindowSize["height"])
         # optimization
         self.setOptimizationFlag(QGraphicsView.DontAdjustForAntialiasing)
         self.setOptimizationFlag(QGraphicsView.DontSavePainterState)
@@ -91,77 +137,120 @@ class Board(QGraphicsView):
         self.setInteractive(False)
         self.setViewport(QGLWidget(QGLFormat()))
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        # initialize the map
+        self.generateMap()
 
+    def generateMap(self):
+        # save block textures
+        self.blockTextures = self.config.blockTextures
         # set up the field
-        self.field = QGraphicsRectItem(0, 0, 640, 640)
+        self.field = QGraphicsRectItem(0, 0, 520, 520)
         self.field.setZValue(-1)
         self.field.setBrush(Qt.black)
         self.field.setX(40)
-        self.field.setY(25)
+        self.field.setY(20)
         self.scene.addItem(self.field)
+        # save these for later use
+        self.fieldCenterX = self.field.x() + (self.field.boundingRect().width() - 1) / 2
+        self.fieldBottom = self.field.y() + self.field.boundingRect().height() - 1
+        # set up the map
+        for b in self.config.maps[f"map{self.currentMap}"]["blueprint"]:
+            blockX = b["xCoord"]
+            blockY = b["yCoord"]
+            blockType = b["type"]
+            block = Block(blockX, blockY, blockType, self.blockTextures[blockType])
+            if blockType == BlockType.bush:
+                block.setZValue(2)
+            elif blockType == BlockType.ice:
+                block.setZValue(-1)
+            self.scene.addItem(block)
+        # add the base
+        self.base = Base(self.config.baseTextures["aliveBase"], self.config.baseTextures["deadBase"])
+        self.base.setX(self.fieldCenterX - self.base.aliveImage.width() / 2)
+        self.base.setY(self.fieldBottom - self.base.aliveImage.height())
+        self.scene.addItem(self.base)
 
     def generatePlayers(self):
-        for i in range(self.numOfPlayers):
-            if i == 0:
-                # add the player on the scene
-                self.player = Player(
-                    self.playerColors[i],
-                    self.firingKey,
-                    self.movementKeys,
-                    self.field,
-                    self.killEmitter,
-                    self.bulletTimer,
-                    Enemy)
-                self.scene.addItem(self.player)
-                # set position of the player -> down and center (last 10 pixels in height argument are for the margin)
-                self.player.setPos(self.field.boundingRect().width() / 2 - self.player.boundingRect().width() / 2,
-                                   self.field.boundingRect().height() - self.player.boundingRect().height())
+        if self.menuToMainWindowData.isOnline:
+            pass
+        else:
+            for i in range(self.numOfPlayers):
+                if i == 0:
+                    firingKey = Qt.Key_Space
+                    movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
+                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
+                    movementNotifier.movementSignal.connect(self.updatePosition)
+                    firingNotifier = FiringNotifier(50)
+                    firingNotifier.firingSignal.connect(self.fireCanon)
+                    player = Player(
+                        i,
+                        self.playerColors[i],
+                        self.playerLevels,
+                        firingKey,
+                        movementKeys,
+                        self.field,
+                        self.killEmitter,
+                        self.bulletTimer,
+                        Enemy,
+                        self.animationTimer,
+                        self.gameOverEmitter,
+                        self.playerDeadEmitter)
+                    player.canShootSignal.connect(self.allowFiring)
+                    startingPos = QPointF(self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
+                                       self.fieldBottom - player.boundingRect().height() - 5)
+                    player.startingPos = startingPos
+                    playerWrapper = PlayerWrapper(i, player, firingKey, movementKeys, firingNotifier, movementNotifier)
+                    self.playerWrappers[i] = playerWrapper
+                    self.scene.addItem(player)
+                    player.setPos(startingPos)
+                elif i == 1:
+                    firingKey = Qt.Key_J
+                    movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
+                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
+                    movementNotifier.movementSignal.connect(self.updatePosition)
+                    firingNotifier = FiringNotifier(50)
+                    firingNotifier.firingSignal.connect(self.fireCanon)
+                    player = Player(
+                        i,
+                        self.playerColors[i],
+                        self.playerLevels,
+                        firingKey,
+                        movementKeys,
+                        self.field,
+                        self.killEmitter,
+                        self.bulletTimer,
+                        Enemy,
+                        self.animationTimer,
+                        self.gameOverEmitter,
+                        self.playerDeadEmitter)
+                    player.canShootSignal.connect(self.allowFiring)
+                    startingPos = QPointF(self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
+                                        self.fieldBottom - player.boundingRect().height() - 5)
+                    player.startingPos = startingPos
+                    playerWrapper = PlayerWrapper(i, player, firingKey, movementKeys, firingNotifier, movementNotifier)
+                    self.playerWrappers[i] = playerWrapper
+                    self.scene.addItem(player)
+                    player.setPos(startingPos)
 
-            elif i == 1:
-                self.player1 = Player(
-                    self.playerColors[i],
-                    self.firingKey1,
-                    self.movementKeys1,
-                    self.field,
-                    self.killEmitter,
-                    self.bulletTimer,
-                    Enemy)
-                self.scene.addItem(self.player1)
-                # set position of the player -> down and center (last 10 pixels in height argument are for the margin)
-                self.player1.setPos(self.field.boundingRect().width() / 2 - self.player1.boundingRect().width() / 2 + 0.5 + 100,
-                                    self.field.boundingRect().height() - self.player1.boundingRect().height())
-
-    def setUpPlayerSlots(self):
-        for i in range(self.numOfPlayers):
-            if i == 0:
-                self.movementNotifier = MovementNotifier(10)
-                self.movementNotifier.movementSignal.connect(self.updatePosition)
-
-                self.firingNotifier = FiringNotifier(50)
-                self.firingNotifier.firingSignal.connect(self.fireCanon)
-
-                self.player.canShootSignal.connect(self.allowFiring)
-
-            elif i == 1:
-                self.movementNotifier1 = MovementNotifier(10)
-                self.movementNotifier1.movementSignal.connect(self.updatePosition)
-
-                self.firingNotifier1 = FiringNotifier(50)
-                self.firingNotifier1.firingSignal.connect(self.fireCanon1)
-
-                self.player1.canShootSignal.connect(self.allowFiring1)
-    ###############################################################################
+    def generateEtd(self):
+        # generate enemy details
+        etdFactory = EnemyTankDetailsFactory(
+            self.config.enemyTypes,
+            self.config.enemyTypeIds,
+            self.config.maps[f"map{self.currentMap}"]["enemies"],
+            self.config.bulletSpeedMap)
+        self.enemiesEtds = etdFactory.generateEnemiesDetails()
 
     def generateEnemy(self):
-        if self.currentEnemyCnt != self.currentEnemyMaxCnt:
+        if self.currentEnemyCnt < self.maxEnemyCnt:
             if self.enemiesCurrentlyAlive < self.maxEnemiesCurrentlyAlive:
-                # enemy pos
+                # set enemy pos and check if it can be spawned
                 posX1 = random.choice(self.randomEnemyPositions)
                 posY1 = self.field.y()
-                posX2 = posX1 + self.player.texture1.width()
-                posY2 = posY1 + self.player.texture1.height()
-                middleX = posX1 + self.player.texture1.width() / 2
-                middleY = posY1 + self.player.texture1.height() / 2
+                posX2 = posX1 + self.playerWrappers[0].player.texture1.width()
+                posY2 = posY1 + self.playerWrappers[0].player.texture1.height()
+                middleX = posX1 + self.playerWrappers[0].player.texture1.width() / 2
+                middleY = posY1 + self.playerWrappers[0].player.texture1.height() / 2
                 item = self.scene.itemAt(posX1, posY1, self.transform())
                 if type(item) != QGraphicsRectItem and item is not None:
                     return
@@ -183,73 +272,90 @@ class Board(QGraphicsView):
                                     return
                                 else:
                                     pass
-                self.currentEnemyCnt += 1
-                self.enemiesCurrentlyAlive += 1
-                print(self.enemiesCurrentlyAlive)
-                enemyType = random.choice(self.enemyTypes)
-                if enemyType == 6:
-                    movementPace = 1
-                else:
-                    movementPace = 1
-                enemy = Enemy(
-                    enemyType,
-                    self.enemyColors[0],
-                    movementPace,
-                    10,
-                    2000,
-                    self.field,
-                    self.enemyTimer,
-                    self.bulletTimer,
-                    Player)
+                enemyEtd = self.enemiesEtds[self.currentEnemyCnt]
+                # set if tank is flashing or not
+                isFlashing = False
+                if self.currentEnemyCnt == 3 or self.currentEnemyCnt == 11 or self.currentEnemyCnt == 17:
+                    isFlashing = True
+                enemy = Enemy(self.currentEnemyCnt,
+                      enemyEtd,
+                      isFlashing,
+                      self.enemyColor,
+                      self.field,
+                      self.enemyMovementTimers[enemyEtd.movementSpeed],
+                      self.enemyShootingTimer,
+                      self.animationTimer,
+                      self.bulletTimer,
+                      Player,
+                      self.killEmitter)
                 self.scene.addItem(enemy)
                 enemy.setPos(posX1, posY1)
-                self.enemies.append(enemy)
+                self.enemies[enemy.id] = enemy
+                self.currentEnemyCnt += 1
+                self.enemiesCurrentlyAlive += 1
 
     def keyPressEvent(self, event):
         key = event.key()
-        if key == self.firingKey:
-            self.firingNotifier.add_key(key)
-        elif key in self.movementKeys.values():
-            self.movementNotifier.add_key(key)
-        elif key == self.firingKey1:
-            self.firingNotifier1.add_key(key)
-        elif key in self.movementKeys1.values():
-            self.movementNotifier1.add_key(key)
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            if key == playerWrapper.firingKey:
+                playerWrapper.firingNotifier.add_key(key)
+            elif key in playerWrapper.movementKeys.values():
+                playerWrapper.movementNotifier.add_key(key)
 
     def keyReleaseEvent(self, event):
         key = event.key()
-        if key == self.firingKey:
-            self.firingNotifier.remove_key(key)
-        elif key in self.movementKeys.values():
-            self.movementNotifier.remove_key(key)
-        elif key == self.firingKey1:
-            self.firingNotifier1.remove_key(key)
-        elif key in self.movementKeys1.values():
-            self.movementNotifier1.remove_key(key)
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            if key == playerWrapper.firingKey:
+                playerWrapper.firingNotifier.remove_key(key)
+            elif key in playerWrapper.movementKeys.values():
+                playerWrapper.movementNotifier.remove_key(key)
 
-    # player1 and player2 slot
     def updatePosition(self, key):
-        if key in self.movementKeys.values():
-            self.player.updatePosition(key)
-        if key in self.movementKeys1.values():
-            self.player1.updatePosition(key)
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            if key in playerWrapper.movementKeys.values():
+                playerWrapper.player.updatePosition(key)
 
-    # player1 slots ##########################
     def fireCanon(self, key):
-        self.player.shoot(key)
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            if key == playerWrapper.firingKey:
+                playerWrapper.player.shoot(key)
 
-    def allowFiring(self, canEmit):
-        self.firingNotifier.canEmit = canEmit
-    ##########################################
+    def allowFiring(self, canShootSignalData):
+        self.playerWrappers[canShootSignalData.playerId].firingNotifier.canEmit = canShootSignalData.canEmit
 
-    # player2 slots ##########################
-    def fireCanon1(self, key):
-        self.player1.shoot(key)
+    def killEmitterHandler(self, ked):
+        if ked.targetType is Enemy:
+            # add points, check if it's flashing so there's a powerup now on the field
+            enemy = self.enemies[ked.targetId]
+            player = self.playerWrappers[ked.shooterId].player
+            player.points += enemy.tankDetails.points
 
-    def allowFiring1(self, canEmit):
-        self.firingNotifier1.canEmit = canEmit
-    ##########################################
+            # remove the tank and delete it for good
+            del self.enemiesEtds[ked.targetId]
+            self.scene.removeItem(self.enemies[ked.targetId])
+            sip.delete(self.enemies[ked.targetId])
+            del self.enemies[ked.targetId]
+            self.enemiesCurrentlyAlive -= 1
+        elif ked.targetType is Player:
+            player = self.playerWrappers[ked.targetId].player
+            player.levelDown()
 
-    def enemyKiller(self, enemy):
-        self.enemies.remove(enemy)
-        self.enemiesCurrentlyAlive -= 1
+    def playerDeadEmitterHandler(self, playerId):
+        playerWrapper = self.playerWrappers[playerId]
+        if len(self.playerWrappers) == 1:
+            self.gameOverHandler()
+        self.scene.removeItem(playerWrapper.player)
+        sip.delete(playerWrapper)
+        del playerWrapper
+
+    def gameOverHandler(self):
+        self.base.destroyBase()
+        self.scene.addItem(self.gameOver)
+        # ANIMATE GAME OVER
+        self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
+        # disconnect from game over signal so there won't be more animations
+        self.gameOverEmitter.gameOverSignal.disconnect()

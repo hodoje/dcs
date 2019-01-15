@@ -1,0 +1,413 @@
+{
+	"mainWindowSize":
+	{
+		"width": 660,
+		"height": 570
+	},
+	"mainMenuTexture": "Resources/Images/UI/start_screen.png",
+	"mainMenuSelector": "Resources/Images/UI/menuSelector.png",
+	"gameOverTexture": "Resources/Images/UI/game_over.png",
+	"baseTextures":
+	{
+		"aliveBase": "Resources/Images/Base/base_eagle_alive",
+		"deadBase": "Resources/Images/Base/base_eagle_dead"
+	},
+	"blockTextures": 
+	{
+		"brick": "Resources/Images/Blocks/block_brick40x40.png",
+		"steel": "Resources/Images/Blocks/block_steel40x40.png",
+		"bush": "Resources/Images/Blocks/block_bush40x40.png",
+		"ice": "Resources/Images/Blocks/block_ice40x40.png",
+		"water": "Resources/Images/Blocks/block_water40x40.png"
+	},
+	"enemyShootInterval": 2000,
+	"enemyMovementSpeedMap":
+	{
+		"slow": 15,
+		"normal": 12,
+		"fast": 8
+	},
+	"bulletSpeedMap":
+	{
+		"slow": 3,
+		"normal": 5,
+		"fast": 7
+	},
+	"enemyTypeIds":
+	{
+		"basic": 5,
+		"fast": 6,
+		"power": 7,
+		"armor": 8
+	},
+	"enemyTypes":
+	{
+		"basic":
+		{
+			"typeIdKey": "basic",
+			"points": 100,
+			"health": 1,
+			"movementSpeed": "slow",
+			"bulletSpeed": "slow"
+		},
+		"fast":
+		{
+			"typeIdKey": "fast",
+			"points": 200,
+			"health": 1,
+			"movementSpeed": "fast",
+			"bulletSpeed": "normal"
+		},
+		"power":
+		{
+			"typeIdKey": "power",
+			"points": 300,
+			"health": 1,
+			"movementSpeed": "normal",
+			"bulletSpeed": "fast"
+		},
+		"armor":
+		{
+			"typeIdKey": "armor",
+			"points": 400,
+			"health": 4,
+			"movementSpeed": "normal",
+			"bulletSpeed": "normal"
+		}
+	},
+	"playerMovementSpeed": 12,
+	"playerLevels":
+	{
+		"star1":
+		{
+			"health": 1,
+			"bulletSpeed": 3
+		},
+		"star2":
+		{
+			"health": 1,
+			"bulletSpeed": 5
+		},
+		"star3":
+		{
+			"health": 2,
+			"bulletSpeed": 7
+		},
+		"star4":
+		{
+			"health": 3,
+			"bulletSpeed": 7
+		}
+	},
+	"maps": 
+	{
+		"map1":
+		{
+			"enemies":
+			{
+				"basic": 18,
+				"fast": 2,
+				"power": 0,
+				"armor": 0
+			},
+			"blueprint":
+			[
+				{
+					"xCoord": 80,
+					"yCoord": 60,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 60,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 60,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 60,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 60,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 60,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 100,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 100,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 100,
+					"type": "bush"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 100,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 100,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 100,
+					"type": "ice"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 140,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 140,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 140,
+					"type": "water"
+				},
+				{
+					"xCoord": 280,
+					"yCoord": 160,
+					"type": "steel"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 140,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 140,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 140,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 180,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 180,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 180,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 180,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 180,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 180,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 220,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 220,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 220,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 220,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 260,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 260,
+					"type": "brick"
+				},
+				{
+					"xCoord": 40,
+					"yCoord": 300,
+					"type" : "steel"
+				},
+				{
+					"xCoord": 120,
+					"yCoord": 300,
+					"type": "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 300,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 300,
+					"type": "brick"
+				},
+				{
+					"xCoord": 440,
+					"yCoord": 300,
+					"type": "brick"
+				},
+				{
+					"xCoord": 520,
+					"yCoord": 300,
+					"type": "steel"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 340,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 340,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 380,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 380,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 380,
+					"type": "brick"
+				},
+				{
+					"xCoord": 280,
+					"yCoord": 360,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 380,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 380,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 380,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 420,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 420,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 420,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 420,
+					"type": "brick"
+				},
+				{
+					"xCoord": 80,
+					"yCoord": 460,
+					"type" : "brick"
+				},
+				{
+					"xCoord": 160,
+					"yCoord": 460,
+					"type": "brick"
+				},
+				{
+					"xCoord": 400,
+					"yCoord": 460,
+					"type": "brick"
+				},
+				{
+					"xCoord": 480,
+					"yCoord": 460,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 500,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 500,
+					"type": "brick"
+				},
+				{
+					"xCoord": 240,
+					"yCoord": 460,
+					"type": "brick"
+				},
+				{
+					"xCoord": 320,
+					"yCoord": 460,
+					"type": "brick"
+				},
+				{
+					"xCoord": 280,
+					"yCoord": 460,
+					"type": "brick"
+				}
+			]
+		}
+	}
+}

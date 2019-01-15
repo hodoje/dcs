@@ -1,9 +1,9 @@
 from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsItem
 
 
-class Block(QGraphicsRectItem):
+class Block(QGraphicsItem):
     def __init__(self, x, y, type, imagePath):
         super().__init__()
         self.xCoord = x
@@ -12,9 +12,10 @@ class Block(QGraphicsRectItem):
         self.texture = QImage(imagePath)
         self.setX(x)
         self.setY(y)
+        self.m_boundingRect = QRectF(0, 0, self.texture.width(), self.texture.height())
 
     def boundingRect(self):
-        return QRectF(0, 0, self.texture.width(), self.texture.height())
+        return self.m_boundingRect
 
     def paint(self, QPainter, QStyleOptionGraphicsItem, widget=None):
         QPainter.drawImage(0, 0, self.texture)

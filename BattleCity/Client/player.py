@@ -1,25 +1,54 @@
-from PyQt5.QtCore import pyqtSignal, QTimer, Qt, QPoint, QRectF
-from PyQt5.QtGui import QImage, QPainterPath
+from PyQt5.QtCore import pyqtSignal, QPoint, QRectF
+from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsRectItem
 
 from directionEnum import Direction
 from bullet import Bullet
+from block import Block
+from blockTypeEnum import BlockType
+
+
+class CanShootSignalData:
+    def __init__(self, playerId, canEmit):
+        self.playerId = playerId
+        self.canEmit = canEmit
 
 
 class Player(QGraphicsObject):
-    canShootSignal = pyqtSignal(int)
+    canShootSignal = pyqtSignal(CanShootSignalData)
 
-    def __init__(self, color, firingKey, movementKeys, field, killEmitter, bulletTimer, targetType, lvl):
+    def __init__(self,
+                 id,
+                 color,
+                 playerLevels,
+                 firingKey,
+                 movementKeys,
+                 field,
+                 killEmitter,
+                 bulletTimer,
+                 targetType,
+                 animationTimer,
+                 gameOverEmitter,
+                 playerDeadEmitter):
         super().__init__()
-        # player color
+        self.id = id
         self.color = color
-        # set up interaction keys
+        self.playerLevels = playerLevels
         self.firingKey = firingKey
         self.movementKeys = movementKeys
         self.field = field
         self.killEmitter = killEmitter
+        self.gameOverEmitter = gameOverEmitter
         self.bulletTimer = bulletTimer
         self.targetType = targetType
+        self.playerDeadEmitter = playerDeadEmitter
+        self.startingPos = None
+
+        # initial player stats
+        self.points = 0
+        self.level = 4
+        self.health = self.playerLevels[f"star{self.level}"]["health"]
+        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
 
         # initial cannon direction
         self.canonDirection = Direction.UP
@@ -30,10 +59,10 @@ class Player(QGraphicsObject):
         # NOTE: this flag is NOT necessary to work properly but will stay here for possible future uses
         self.canShoot = True
 
-        # initial player that will (hope so) be used in the future
-        self.level = lvl
-
         self.__init_ui__()
+
+        self.textureTimer = animationTimer
+        self.textureTimer.timeout.connect(self.updateUi)
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
@@ -45,10 +74,6 @@ class Player(QGraphicsObject):
         self.m_boundingRect = QRectF(0, 0, self.width, self.height)
         self.textures = [self.texture2, self.texture1]
         self.isFirstTexture = 1
-        self.textureTimer = QTimer()
-        self.textureTimer.setTimerType(Qt.PreciseTimer)
-        self.textureTimer.timeout.connect(self.updateUi)
-        self.textureTimer.start(100)
         self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
 
     # override default bounding rect
@@ -67,6 +92,26 @@ class Player(QGraphicsObject):
         # self.update() will schedule a paint event on the parent QGraphicsView
         # so paint won't execute immediately
         self.update()
+
+    def levelUp(self):
+        if not self.level == 4:
+            self.level += 1
+            self.health = self.playerLevels[f"star{self.level}"]["health"]
+            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+            self.updateTextures()
+
+    def levelDown(self):
+        self.level -= 1
+        if self.level in [0, 1]:
+            self.playerDeadEmitter.playerDeadSignal.emit(self.id)
+            return
+        self.health = self.playerLevels[f"star{self.level}"]["health"]
+        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+        self.updateTextures()
+
+    def updateTextures(self):
+        self.__init_ui__()
+        self.setPos(self.startingPos)
 
     # movements
     def moveRight(self):
@@ -109,8 +154,13 @@ class Player(QGraphicsObject):
         y2 = y1 + self.height
 
         for obj in allObjects:
-            # skip the field object and self
-            if type(obj) != QGraphicsRectItem and self != obj:
+            # don't camper to self and field
+            oType = type(obj)
+            if self != obj and oType != QGraphicsRectItem:
+                if type(obj) == Block:
+                    # omit bushes and ice
+                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                        continue
                 objX1 = obj.x()
                 objY1 = obj.y()
                 objX2 = objX1 + obj.boundingRect().width()
@@ -131,32 +181,32 @@ class Player(QGraphicsObject):
                 if self.canMove(Direction.RIGHT):
                     # else move in the desired direction
                     self.moveRight()
-                    # check if the canon is facing the desired direction
-                    # if not, rotate to it and set the direction
-                    if not self.canonDirection == Direction.RIGHT:
-                        self.rotate(Direction.RIGHT)
-                    self.canonDirection = Direction.RIGHT
+            # check if the canon is facing the desired direction
+            # if not, rotate to it and set the direction
+            if not self.canonDirection == Direction.RIGHT:
+                self.rotate(Direction.RIGHT)
+            self.canonDirection = Direction.RIGHT
         elif key == self.movementKeys["Left"]:
             if self.pos().x() > self.field.x():
                 if self.canMove(Direction.LEFT):
                     self.moveLeft()
-                    if not self.canonDirection == Direction.LEFT:
-                        self.rotate(Direction.LEFT)
-                    self.canonDirection = Direction.LEFT
+            if not self.canonDirection == Direction.LEFT:
+                self.rotate(Direction.LEFT)
+            self.canonDirection = Direction.LEFT
         elif key == self.movementKeys["Down"]:
             if self.pos().y() + self.height < self.field.y() + self.field.boundingRect().height() - 1:
                 if self.canMove(Direction.DOWN):
                     self.moveDown()
-                    if not self.canonDirection == Direction.DOWN:
-                        self.rotate(Direction.DOWN)
-                    self.canonDirection = Direction.DOWN
+            if not self.canonDirection == Direction.DOWN:
+                self.rotate(Direction.DOWN)
+            self.canonDirection = Direction.DOWN
         elif key == self.movementKeys["Up"]:
             if self.pos().y() > self.field.y():
                 if self.canMove(Direction.UP):
                     self.moveUp()
-                    if not self.canonDirection == Direction.UP:
-                        self.rotate(Direction.UP)
-                    self.canonDirection = Direction.UP
+            if not self.canonDirection == Direction.UP:
+                self.rotate(Direction.UP)
+            self.canonDirection = Direction.UP
 
     def shoot(self, key):
         if self.canShoot:
@@ -186,4 +236,4 @@ class Player(QGraphicsObject):
     # back to the board and the board will call the players fire function
     def announceCanShoot(self, canShoot):
         self.canShoot = canShoot
-        self.canShootSignal.emit(canShoot)
+        self.canShootSignal.emit(CanShootSignalData(self.id, canShoot))

@@ -1,25 +1,43 @@
-from PyQt5.QtCore import QTimer, Qt, QPoint, QRectF
+from PyQt5.QtCore import QPoint, QRectF
 from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem, QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem
 
 from directionEnum import Direction
 from bullet import Bullet
+from block import Block
+from blockTypeEnum import BlockType
 
 import random
 
 
 class Enemy(QGraphicsItem):
-    def __init__(self, type, color, movementPace, movementSpeed, shootingSpeed, field, movementTimer, bulletTimer, targetType):
+    def __init__(self,
+                 tankId,
+                 tankDetails,
+                 isFlashing,
+                 color,
+                 field,
+                 movementTimer,
+                 shootingTimer,
+                 animationTimer,
+                 bulletTimer,
+                 targetType,
+                 killEmitter):
         super().__init__()
-        self.type = type
+        self.id = tankId
+        self.tankDetails = tankDetails
+        self.isFlashing = isFlashing
         self.color = color
-        self.movementSpeed = movementSpeed
-        self.shootingSpeed = shootingSpeed
-        self.movementPace = movementPace
         self.field = field
         self.directions = [Direction.RIGHT, Direction.LEFT, Direction.DOWN, Direction.UP]
+        self.movementTimer = movementTimer
+        self.shootingTimer = shootingTimer
+        self.textureTimer = animationTimer
+        # these properties get sent to Bullet objects
         self.bulletTimer = bulletTimer
         self.targetType = targetType
+        self.killEmitter = killEmitter
+        self.bulletSpeed = self.tankDetails.bulletSpeed
 
         # initial cannon direction
         self.canonDirection = Direction.DOWN
@@ -32,68 +50,59 @@ class Enemy(QGraphicsItem):
 
         self.__init_ui__()
 
+        # TIMERS
+        # set up animation timer
+        self.textureTimer.timeout.connect(self.updateUi)
         # set up movement timer
-        self.movementTimer = movementTimer
-        #self.movementTimer.setTimerType(Qt.PreciseTimer)
         self.movementTimer.timeout.connect(self.randomMovement)
-        #self.movementTimer.start(self.movementSpeed)
-
         # set up shooting timer
-        self.shootingTimer = QTimer()
-        self.shootingTimer.setTimerType(Qt.PreciseTimer)
         self.shootingTimer.timeout.connect(self.randomShooting)
-        #self.shootingTimer.start(self.shootingSpeed)
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
-        self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.type}.png")
-        self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.type}.png")
-        self.width = self.texture1.width()
-        self.height = self.texture1.height()
-        self.textures = [self.texture2, self.texture1]
-        self.isFirstTexture = 1
-        self.textureTimer = QTimer()
-        self.textureTimer.setTimerType(Qt.PreciseTimer)
-        self.textureTimer.timeout.connect(self.updateUi)
-        self.textureTimer.start(100)
+        self.textures = []
+        self.textures.append(QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.tankDetails.tankType}.png"))
+        self.textures.append(QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.tankDetails.tankType}.png"))
+        if self.isFlashing:
+            self.textures.append(QImage(f"Resources/Images/Tanks/red/redFP.v{self.tankDetails.tankType}.png"))
+            self.textures.append(QImage(f"Resources/Images/Tanks/red/redSP.v{self.tankDetails.tankType}.png"))
+        self.currentTexture = 0
+        self.width = self.textures[0].width()
+        self.height = self.textures[0].height()
+        self.m_boundingRect = QRectF(0, 0, self.width, self.height)
         self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
         self.rotate(self.canonDirection)
 
-    def getDirections(self):
-        directions = []
-        for k in Direction:
-            directions.append(k)
-        return directions
-
     # override default bounding rect
     def boundingRect(self):
-        return QRectF(0, 0, self.width, self.height)
+        return self.m_boundingRect
 
     # override default paint
     def paint(self, QPainter, QStyleOptionGraphicsItem, QWidget):
-        if self.isFirstTexture:
-            QPainter.drawImage(0, 0, self.texture1)
-        else:
-            QPainter.drawImage(0, 0, self.texture2)
+        QPainter.drawImage(0, 0, self.textures[self.currentTexture])
+
 
     def updateUi(self):
-        self.isFirstTexture = not self.isFirstTexture
+        self.currentTexture += 1
+        if self.currentTexture == len(self.textures):
+            self.currentTexture = 0
         # self.update() will schedule a paint event on the parent QGraphicsView
-        # so paint won't execute immediately
+        # so paint won't execute immediately but if i expect correctly when the
+        # QGraphicsView.viewport.repaint is called (<- NOTE about this line: that's not how to force the repaint)
         self.update()
 
     # movements
     def moveRight(self):
-        self.setX(self.x() + self.movementPace)
+        self.setX(self.x() + 1)
 
     def moveLeft(self):
-        self.setX(self.x() - self.movementPace)
+        self.setX(self.x() - 1)
 
     def moveDown(self):
-        self.setY(self.y() + self.movementPace)
+        self.setY(self.y() + 1)
 
     def moveUp(self):
-        self.setY(self.y() - self.movementPace)
+        self.setY(self.y() - 1)
 
     # rotations
     def rotate(self, nextDirection):
@@ -123,7 +132,13 @@ class Enemy(QGraphicsItem):
         y2 = y1 + self.height
 
         for obj in allObjects:
-            if type(obj) != QGraphicsRectItem and self != obj:
+            # don't camper to self and field
+            oType = type(obj)
+            if self != obj and oType != QGraphicsRectItem:
+                if type(obj) == Block:
+                    # omit bushes and ice
+                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                        continue
                 objX1 = obj.x()
                 objY1 = obj.y()
                 objX2 = objX1 + obj.boundingRect().width()
@@ -136,7 +151,7 @@ class Enemy(QGraphicsItem):
     # NOTE: magic '-1' for the same reason as on the player
     def updatePosition(self, direction):
         # before each move check if move is possible
-        if direction is Direction.RIGHT:
+        if direction == Direction.RIGHT:
             if self.pos().x() + self.width < self.field.x() + self.field.boundingRect().width() - 1:
                 if self.canMove(Direction.RIGHT):
                     self.moveRight()
@@ -148,7 +163,7 @@ class Enemy(QGraphicsItem):
                     return False
             else:
                 return False
-        elif direction is Direction.LEFT:
+        elif direction == Direction.LEFT:
             if self.pos().x() > self.field.x():
                 if self.canMove(Direction.LEFT):
                     self.moveLeft()
@@ -160,7 +175,7 @@ class Enemy(QGraphicsItem):
                     return False
             else:
                 return False
-        elif direction is Direction.DOWN:
+        elif direction == Direction.DOWN:
             if self.pos().y() + self.height < self.field.y() + self.field.boundingRect().height() - 1:
                 if self.canMove(Direction.DOWN):
                     self.moveDown()
@@ -172,7 +187,7 @@ class Enemy(QGraphicsItem):
                     return False
             else:
                 return False
-        elif direction is Direction.UP:
+        elif direction == Direction.UP:
             if self.pos().y() > self.field.y():
                 if self.canMove(Direction.UP):
                     self.moveUp()
@@ -190,13 +205,13 @@ class Enemy(QGraphicsItem):
     def shoot(self):
         # create the bullet
         bullet = Bullet(self.canonDirection, self)
+        # announce that the enemy can't shoot until the bullet calls this function again
         self.announceCanShoot(False)
-        # announce that the player can't shoot until the bullet calls this function again
         # set the bullet in the center of the tank
-        # 0.4 is the 40% aspect ration of the width/height of the tank so the bullet
+        # 0.37 is the 37% aspect ration of the width/height of the tank so the bullet
         # (with its width/height will be in the middle)
         # magic numbers are based on the size of the image itself and the black margin
-        # between the image end and the tank object itself in that image
+        # between the image's end and the tank object itself in that image
         if self.canonDirection == Direction.UP:
             bullet.setPos(self.x() + self.boundingRect().width() * 0.37, self.y() - 15)
         elif self.canonDirection == Direction.DOWN:

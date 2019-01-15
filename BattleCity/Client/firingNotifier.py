@@ -12,22 +12,22 @@ class FiringNotifier(QObject):
         # the board sets this flag according to player.announceCanShoot function
         self.canEmit = True
 
-        self.timerInterval = timerInterval
-        self.timer = QTimer()
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.emitKey)
-        self.timer.start(self.timerInterval)
-
-        # code for using threads
-        # self.thread = QThread()
         # self.timerInterval = timerInterval
         # self.timer = QTimer()
         # self.timer.setTimerType(Qt.PreciseTimer)
         # self.timer.timeout.connect(self.emitKey)
-        # self.timer.moveToThread(self.thread)
-        # self.timer.setInterval(self.timerInterval)
-        # self.thread.started.connect(self.timer.start)
-        # self.thread.start()
+        # self.timer.start(self.timerInterval)
+
+        # code for using threads
+        self.thread = QThread()
+        self.timerInterval = timerInterval
+        self.timer = QTimer()
+        self.timer.setTimerType(Qt.PreciseTimer)
+        self.timer.timeout.connect(self.emitKey)
+        self.moveToThread(self.thread)
+        self.timer.setInterval(self.timerInterval)
+        self.thread.started.connect(self.timer.start)
+        self.thread.start()
 
     def add_key(self, key):
         self.keys.append(key)
