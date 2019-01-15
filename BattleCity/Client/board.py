@@ -35,6 +35,8 @@ class Board(QGraphicsView):
         self.enemyColor = "gray"
         self.enemiesEtds = {}
         self.enemies = {}
+        self.enemySpawnRegionWidth = self.config.enemySpawnRegionWidth
+        self.enemySpawnRegionHeight = self.config.enemySpawnRegionHeight
         self.enemySpawnInterval = 3000
         self.maxEnemyCnt = 20
         self.currentEnemyCnt = 0
@@ -247,10 +249,10 @@ class Board(QGraphicsView):
                 # set enemy pos and check if it can be spawned
                 posX1 = random.choice(self.randomEnemyPositions)
                 posY1 = self.field.y()
-                posX2 = posX1 + self.playerWrappers[0].player.texture1.width()
-                posY2 = posY1 + self.playerWrappers[0].player.texture1.height()
-                middleX = posX1 + self.playerWrappers[0].player.texture1.width() / 2
-                middleY = posY1 + self.playerWrappers[0].player.texture1.height() / 2
+                posX2 = posX1 + self.enemySpawnRegionWidth
+                posY2 = posY1 + self.enemySpawnRegionHeight
+                middleX = posX1 + self.enemySpawnRegionWidth / 2
+                middleY = posY1 + self.enemySpawnRegionHeight / 2
                 item = self.scene.itemAt(posX1, posY1, self.transform())
                 if type(item) != QGraphicsRectItem and item is not None:
                     return
@@ -348,9 +350,16 @@ class Board(QGraphicsView):
         playerWrapper = self.playerWrappers[playerId]
         if len(self.playerWrappers) == 1:
             self.gameOverHandler()
+        # stop all player notifiers
+        playerWrapper.firingNotifier.thread.terminate()
+        playerWrapper.movementNotifier.thread.terminate()
+        # playerWrapper.firingNotifier.thread.wait()
+        # playerWrapper.movementNotifier.thread.wait()
+
         self.scene.removeItem(playerWrapper.player)
-        sip.delete(playerWrapper)
-        del playerWrapper
+        sip.delete(playerWrapper.player)
+        del playerWrapper.player
+        del self.playerWrappers[playerId]
 
     def gameOverHandler(self):
         self.base.destroyBase()

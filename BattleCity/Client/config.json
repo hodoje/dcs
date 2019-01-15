@@ -20,6 +20,8 @@
 		"ice": "Resources/Images/Blocks/block_ice40x40.png",
 		"water": "Resources/Images/Blocks/block_water40x40.png"
 	},
+	"enemySpawnRegionWidth": 32,
+	"enemySpawnRegionHeight": 32,
 	"enemyShootInterval": 2000,
 	"enemyMovementSpeedMap":
 	{

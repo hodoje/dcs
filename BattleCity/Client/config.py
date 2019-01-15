@@ -11,6 +11,8 @@ class Config:
         self.gameOverTexture = self.config["gameOverTexture"]
         self.baseTextures = self.config["baseTextures"]
         self.blockTextures = self.config["blockTextures"]
+        self.enemySpawnRegionWidth = self.config["enemySpawnRegionWidth"]
+        self.enemySpawnRegionHeight = self.config["enemySpawnRegionHeight"]
         self.enemyShootInterval = self.config["enemyShootInterval"]
         self.enemyMovementSpeedMap = self.config["enemyMovementSpeedMap"]
         self.bulletSpeedMap = self.config["bulletSpeedMap"]

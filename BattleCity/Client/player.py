@@ -46,7 +46,7 @@ class Player(QGraphicsObject):
 
         # initial player stats
         self.points = 0
-        self.level = 4
+        self.level = 2
         self.health = self.playerLevels[f"star{self.level}"]["health"]
         self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
 
@@ -104,10 +104,10 @@ class Player(QGraphicsObject):
         self.level -= 1
         if self.level in [0, 1]:
             self.playerDeadEmitter.playerDeadSignal.emit(self.id)
-            return
-        self.health = self.playerLevels[f"star{self.level}"]["health"]
-        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
-        self.updateTextures()
+        else:
+            self.health = self.playerLevels[f"star{self.level}"]["health"]
+            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+            self.updateTextures()
 
     def updateTextures(self):
         self.__init_ui__()
