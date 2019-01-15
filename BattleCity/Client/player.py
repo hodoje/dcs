@@ -46,7 +46,7 @@ class Player(QGraphicsObject):
 
         # initial player stats
         self.points = 0
-        self.level = 2
+        self.level = 4
         self.health = self.playerLevels[f"star{self.level}"]["health"]
         self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
 
@@ -102,6 +102,7 @@ class Player(QGraphicsObject):
 
     def levelDown(self):
         self.level -= 1
+        # if it was first level now will be 0, and if it was second now will be first, so in both cases, player is dead
         if self.level in [0, 1]:
             self.playerDeadEmitter.playerDeadSignal.emit(self.id)
         else:

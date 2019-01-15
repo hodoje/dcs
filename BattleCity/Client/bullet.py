@@ -108,6 +108,10 @@ class Bullet(QGraphicsPixmapItem):
                                     del self
                                 elif obj.type == BlockType.steel:
                                     # remove the bullet
+                                    if type(self.owner).__name__ == "Player":
+                                        if self.owner.level in [3, 4]:
+                                            self.scene().removeItem(obj)
+                                            del obj
                                     self.scene().removeItem(self)
                                     self.owner.announceCanShoot(True)
                                     sip.delete(self)
@@ -154,6 +158,10 @@ class Bullet(QGraphicsPixmapItem):
                                     sip.delete(self)
                                     del self
                                 elif obj.type == BlockType.steel:
+                                    if type(self.owner).__name__ == "Player":
+                                        if self.owner.level in [3, 4]:
+                                            self.scene().removeItem(obj)
+                                            del obj
                                     self.scene().removeItem(self)
                                     self.owner.announceCanShoot(True)
                                     sip.delete(self)
@@ -198,6 +206,10 @@ class Bullet(QGraphicsPixmapItem):
                                     sip.delete(self)
                                     del self
                                 elif obj.type == BlockType.steel:
+                                    if type(self.owner).__name__ == "Player":
+                                        if self.owner.level in [3, 4]:
+                                            self.scene().removeItem(obj)
+                                            del obj
                                     self.scene().removeItem(self)
                                     self.owner.announceCanShoot(True)
                                     sip.delete(self)
@@ -241,6 +253,10 @@ class Bullet(QGraphicsPixmapItem):
                                     sip.delete(self)
                                     del self
                                 elif obj.type == BlockType.steel:
+                                    if type(self.owner).__name__ == "Player":
+                                        if self.owner.level in [3, 4]:
+                                            self.scene().removeItem(obj)
+                                            del obj
                                     self.scene().removeItem(self)
                                     self.owner.announceCanShoot(True)
                                     sip.delete(self)
