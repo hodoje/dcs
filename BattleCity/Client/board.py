@@ -369,7 +369,10 @@ class Board(QGraphicsView):
     def gameOverHandler(self):
         if self.base.isAlive:
             self.base.destroyBase()
+            pw: PlayerWrapper
             for pw in self.playerWrappers.values():
+                pw.firingNotifier.firingSignal.disconnect()
+                pw.movementNotifier.movementSignal.disconnect()
                 self.scene.removeItem(pw.player)
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER

@@ -225,7 +225,6 @@ class Player(QGraphicsObject):
                 self.scene().addItem(bullet)
 
     def announceCanShoot(self, canShoot):
-        self.canShoot = canShoot
         if canShoot:
             self.firedBullets -= 1
         else:
