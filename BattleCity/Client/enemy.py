@@ -22,7 +22,8 @@ class Enemy(QGraphicsItem):
                  animationTimer,
                  bulletTimer,
                  targetType,
-                 killEmitter):
+                 killEmitter,
+                 gameOverEmitter):
         super().__init__()
         self.id = tankId
         self.tankDetails = tankDetails
@@ -37,6 +38,7 @@ class Enemy(QGraphicsItem):
         self.bulletTimer = bulletTimer
         self.targetType = targetType
         self.killEmitter = killEmitter
+        self.gameOverEmitter = gameOverEmitter
         self.bulletSpeed = self.tankDetails.bulletSpeed
 
         # initial cannon direction

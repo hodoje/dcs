@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsPixmapItem
 
 from firingNotifier import FiringNotifier
 from killEmitter import KillEmitter
@@ -141,6 +142,14 @@ class Board(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         # initialize the map
         self.generateMap()
+        # interface
+        currentStagePixmap = QPixmap("Resources/Images/UI/current_stage.png")
+        self.currentStage = QGraphicsPixmapItem(currentStagePixmap)
+        self.currentStage.setX(self.field.x() + self.field.boundingRect().width() + 20)
+        self.currentStage.setY(self.field.y() + self.field.boundingRect().height() - 100)
+        self.scene.addItem(self.currentStage)
+
+
 
     def generateMap(self):
         # save block textures
@@ -289,7 +298,8 @@ class Board(QGraphicsView):
                       self.animationTimer,
                       self.bulletTimer,
                       Player,
-                      self.killEmitter)
+                      self.killEmitter,
+                      self.gameOverEmitter)
                 self.scene.addItem(enemy)
                 enemy.setPos(posX1, posY1)
                 self.enemies[enemy.id] = enemy
@@ -362,9 +372,10 @@ class Board(QGraphicsView):
         del self.playerWrappers[playerId]
 
     def gameOverHandler(self):
-        self.base.destroyBase()
-        self.scene.addItem(self.gameOver)
-        # ANIMATE GAME OVER
-        self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
-        # disconnect from game over signal so there won't be more animations
-        self.gameOverEmitter.gameOverSignal.disconnect()
+        if self.base.isAlive:
+            self.base.destroyBase()
+            self.scene.addItem(self.gameOver)
+            # ANIMATE GAME OVER
+            self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
+            # disconnect from game over signal so there won't be more animations
+            self.gameOverEmitter.gameOverSignal.disconnect()

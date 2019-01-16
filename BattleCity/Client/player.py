@@ -43,6 +43,7 @@ class Player(QGraphicsObject):
         self.targetType = targetType
         self.playerDeadEmitter = playerDeadEmitter
         self.startingPos = None
+        self.lives = 2
 
         # initial player stats
         self.points = 0
@@ -104,7 +105,11 @@ class Player(QGraphicsObject):
         self.level -= 1
         # if it was first level now will be 0, and if it was second now will be first, so in both cases, player is dead
         if self.level in [0, 1]:
-            self.playerDeadEmitter.playerDeadSignal.emit(self.id)
+            self.lives -= 1
+            if self.lives == 0:
+                self.playerDeadEmitter.playerDeadSignal.emit(self.id)
+                return
+            self.setPos(self.startingPos)
         else:
             self.health = self.playerLevels[f"star{self.level}"]["health"]
             self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
@@ -112,7 +117,7 @@ class Player(QGraphicsObject):
 
     def updateTextures(self):
         self.__init_ui__()
-        self.setPos(self.startingPos)
+
 
     # movements
     def moveRight(self):
