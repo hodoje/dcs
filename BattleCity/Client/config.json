@@ -82,22 +82,22 @@
 	{
 		"star1":
 		{
-			"health": 1,
+			"rateOfFire": 1,
 			"bulletSpeed": 3
 		},
 		"star2":
 		{
-			"health": 1,
+			"rateOfFire": 1,
 			"bulletSpeed": 5
 		},
 		"star3":
 		{
-			"health": 2,
+			"rateOfFire": 2,
 			"bulletSpeed": 7
 		},
 		"star4":
 		{
-			"health": 3,
+			"rateOfFire": 2,
 			"bulletSpeed": 7
 		}
 	},

@@ -8,14 +8,7 @@ from block import Block
 from blockTypeEnum import BlockType
 
 
-class CanShootSignalData:
-    def __init__(self, playerId, canEmit):
-        self.playerId = playerId
-        self.canEmit = canEmit
-
-
 class Player(QGraphicsObject):
-    canShootSignal = pyqtSignal(CanShootSignalData)
 
     def __init__(self,
                  id,
@@ -43,25 +36,23 @@ class Player(QGraphicsObject):
         self.targetType = targetType
         self.playerDeadEmitter = playerDeadEmitter
         self.startingPos = None
-        self.lives = 2
+
+        # used to determine if the player can shoot
+        self.firedBullets = 0
 
         # initial player stats
+        self.lives = 2
         self.points = 0
         self.level = 4
-        self.health = self.playerLevels[f"star{self.level}"]["health"]
+        self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
         self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
 
         # initial cannon direction
         self.canonDirection = Direction.UP
 
-        # used to determine if player can shoot
-        # initially is true, set to false when a bullet is fired, then set to true after bullet is destroyed
-        # will probably be changed in the future
-        # NOTE: this flag is NOT necessary to work properly but will stay here for possible future uses
-        self.canShoot = True
-
         self.__init_ui__()
 
+        # texture animation
         self.textureTimer = animationTimer
         self.textureTimer.timeout.connect(self.updateUi)
 
@@ -97,27 +88,23 @@ class Player(QGraphicsObject):
     def levelUp(self):
         if not self.level == 4:
             self.level += 1
-            self.health = self.playerLevels[f"star{self.level}"]["health"]
+            self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
             self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
             self.updateTextures()
 
-    def levelDown(self):
-        self.level -= 1
-        # if it was first level now will be 0, and if it was second now will be first, so in both cases, player is dead
-        if self.level in [0, 1]:
-            self.lives -= 1
-            if self.lives == 0:
-                self.playerDeadEmitter.playerDeadSignal.emit(self.id)
-                return
-            self.setPos(self.startingPos)
-        else:
-            self.health = self.playerLevels[f"star{self.level}"]["health"]
-            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
-            self.updateTextures()
+    def resetPlayer(self):
+        self.lives -= 1
+        if self.lives < 0:
+            self.playerDeadEmitter.playerDeadSignal.emit(self.id)
+            return
+        self.level = 1
+        self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
+        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+        self.updateTextures()
+        self.setPos(self.startingPos)
 
     def updateTextures(self):
         self.__init_ui__()
-
 
     # movements
     def moveRight(self):
@@ -215,7 +202,7 @@ class Player(QGraphicsObject):
             self.canonDirection = Direction.UP
 
     def shoot(self, key):
-        if self.canShoot:
+        if self.firedBullets < self.rateOfFire:
             if key == self.firingKey:
                 # create the bullet
                 bullet = Bullet(self.canonDirection, self)
@@ -237,9 +224,9 @@ class Player(QGraphicsObject):
                 # add the bullet to the scene
                 self.scene().addItem(bullet)
 
-    # this function will signal the board that the player can shoot
-    # which will then set up the firing notifier flag that it can emit shooting keys
-    # back to the board and the board will call the players fire function
     def announceCanShoot(self, canShoot):
         self.canShoot = canShoot
-        self.canShootSignal.emit(CanShootSignalData(self.id, canShoot))
+        if canShoot:
+            self.firedBullets -= 1
+        else:
+            self.firedBullets += 1

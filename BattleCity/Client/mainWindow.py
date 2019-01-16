@@ -1,3 +1,4 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget
 from board import Board
 from config import Config
@@ -27,7 +28,10 @@ class MainWindow(QMainWindow):
         self.center()
 
     def menuToMainWindowHandler(self, menuToMainWindowData: MenuToMainWindowData):
-        self.board = Board(self.config, self.currentMap, menuToMainWindowData)
+        self.centralWidget().clearFocus()
+        self.board = Board(self, self.config, self.currentMap, menuToMainWindowData)
+        self.board.setFocusPolicy(Qt.StrongFocus)
+        self.board.setFocus()
         self.changeView(self.board)
 
     def boardToMainWindowSignalHandler(self, boardToMainWindowData: BoardToMainWindowData):

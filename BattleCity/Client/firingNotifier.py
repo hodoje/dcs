@@ -36,6 +36,6 @@ class FiringNotifier(QObject):
         self.keys.remove(key)
 
     def emitKey(self):
-        if self.canEmit:
-            for k in self.keys:
-                self.firingSignal.emit(k)
+        # if self.canEmit:
+        for k in self.keys:
+            self.firingSignal.emit(k)

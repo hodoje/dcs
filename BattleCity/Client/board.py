@@ -22,8 +22,8 @@ import sip
 
 
 class Board(QGraphicsView):
-    def __init__(self, config, currentMap, menuToMainWindowData):
-        super().__init__()
+    def __init__(self, parent, config, currentMap, menuToMainWindowData):
+        QGraphicsView.__init__(self, parent)
 
         self.config = config
         self.currentMap = currentMap
@@ -206,7 +206,6 @@ class Board(QGraphicsView):
                         self.animationTimer,
                         self.gameOverEmitter,
                         self.playerDeadEmitter)
-                    player.canShootSignal.connect(self.allowFiring)
                     startingPos = QPointF(self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
                                        self.fieldBottom - player.boundingRect().height() - 5)
                     player.startingPos = startingPos
@@ -219,7 +218,7 @@ class Board(QGraphicsView):
                     movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
                     movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                     movementNotifier.movementSignal.connect(self.updatePosition)
-                    firingNotifier = FiringNotifier(50)
+                    firingNotifier = FiringNotifier(150)
                     firingNotifier.firingSignal.connect(self.fireCanon)
                     player = Player(
                         i,
@@ -234,7 +233,6 @@ class Board(QGraphicsView):
                         self.animationTimer,
                         self.gameOverEmitter,
                         self.playerDeadEmitter)
-                    player.canShootSignal.connect(self.allowFiring)
                     startingPos = QPointF(self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
                                         self.fieldBottom - player.boundingRect().height() - 5)
                     player.startingPos = startingPos
@@ -336,9 +334,6 @@ class Board(QGraphicsView):
             if key == playerWrapper.firingKey:
                 playerWrapper.player.shoot(key)
 
-    def allowFiring(self, canShootSignalData):
-        self.playerWrappers[canShootSignalData.playerId].firingNotifier.canEmit = canShootSignalData.canEmit
-
     def killEmitterHandler(self, ked):
         if ked.targetType is Enemy:
             # add points, check if it's flashing so there's a powerup now on the field
@@ -354,7 +349,7 @@ class Board(QGraphicsView):
             self.enemiesCurrentlyAlive -= 1
         elif ked.targetType is Player:
             player = self.playerWrappers[ked.targetId].player
-            player.levelDown()
+            player.resetPlayer()
 
     def playerDeadEmitterHandler(self, playerId):
         playerWrapper = self.playerWrappers[playerId]
@@ -374,6 +369,8 @@ class Board(QGraphicsView):
     def gameOverHandler(self):
         if self.base.isAlive:
             self.base.destroyBase()
+            for pw in self.playerWrappers.values():
+                self.scene.removeItem(pw.player)
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER
             self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
