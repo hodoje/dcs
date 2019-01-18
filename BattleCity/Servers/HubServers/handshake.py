@@ -2,8 +2,9 @@ from twisted.internet.protocol import Factory
 from twisted.protocols import amp
 from twisted.internet import reactor
 
+
 class HandshakeHandler(amp.Command):
-    arguments = []
+    arguments = [(b'asked', amp.Boolean())]
 
     response = [(b'id', amp.String())]
 
@@ -15,23 +16,21 @@ class HandshakeProtocol(amp.AMP):
         self._factory = factory
         super(HandshakeProtocol, self).__init__()
 
-    def ReceiveGameRequest(self):
-        return {'id': self.factory.generatePlayerId()}
+    @HandshakeHandler.responder
+    def ReceiveGameRequest(self, asked):
+        if asked:
+            id = self._factory.generatePlayerId().encode()
+            return {'id': id}
+        return
 
 
 class HandshakeFactory(Factory):
-    def __init__(self):
-        self.playerID = 'ID#'
-        self.playerID_iterator = 0
 
     def buildProtocol(self, addr):
         return HandshakeProtocol(self)
 
-    def generatePlayerId(self):
-        self.playerIDIterator += 1
-        return self.playerID + str(self.playerIDIterator)
 
-def main(port):
-    pf = HandshakeFactory()
-    reactor.listenTCP(port, pf)
-    print('Started handshake with client')
+#def main(port):
+    #pf = HandshakeFactory()
+    #reactor.listenTCP(port, pf)
+    #print('Started handshake with client')

@@ -1,8 +1,6 @@
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
 
-from Servers.HubServers import handshake
-
 
 class DoesNothing(Protocol):
     pass
@@ -14,8 +12,11 @@ class HandleClientsFactory(Factory):
         self.connections = 0
         self.maxConnections = numberOfPlayers
         self.buffer = []
+        self.playerID = 'ID'
+        self.playerID_iterator = 0
 
     def buildProtocol(self, addr):
+        from Servers.HubServers import handshake
         if self.connections < self.maxConnections:
             return handshake.HandshakeFactory.buildProtocol(self, addr)
 
@@ -28,6 +29,10 @@ class HandleClientsFactory(Factory):
             return True
         else:
             return False
+
+    def generatePlayerId(self):
+        self.playerID_iterator += 1
+        return self.playerID + str(self.playerID_iterator)
 
 
 def handleConnection(port, gameMode, hubPipeEnd):

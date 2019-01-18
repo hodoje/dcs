@@ -35,16 +35,14 @@ class MasterProtocol(amp.AMP):
     def receiveGameRequest(self, gameMode):
         hubPort = self._factory.getPort()
 
-        if len(self._factory.hubFactories) == 0:
-            self._factory.addHub(self.createNewHub(hubPort, gameMode))
+        if self._factory.hubFactories:
+            # Check for open slots, else create a new hub
+            for pf in self._factory.hubFactories:
+                if pf.checkGameMode(gameMode):
+                    hubPort = pf.hubsPort
+                    return {'hubPort': hubPort}
 
-        # Check for open slots, else create a new hub
-        for pf in self._factory.hubFactories:
-            if pf.checkGameMode(gameMode):
-                hubPort = pf.hubsPort
-                return {'hubPort': hubPort}
-
-        self._factory.append(self.createNewHub(hubPort, gameMode))
+        self._factory.addHub(self.createNewHub(hubPort, gameMode))
         return {'hubPort': hubPort}
 
     # instantiate new hub, run as new proces, communicate via pipe
@@ -59,8 +57,8 @@ class MasterProtocol(amp.AMP):
 
 class MasterFactory(Factory):
     def __init__(self):
-        self.port = 8999
-        self.hubPort = 10010
+        self.port = 9050
+        self.hubPort = 10000
         self.hubFactories = []
         self.pipeEndpoints = []
 

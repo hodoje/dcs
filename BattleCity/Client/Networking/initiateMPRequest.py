@@ -4,10 +4,11 @@ from twisted.protocols import amp
 from twisted.internet import reactor
 
 from Servers.MasterServer import master
+from Servers.HubServers import handshake
 
 
 class GameRequest:
-    def __init__(self, port=8999):
+    def __init__(self, port=9050):
         self.port = port
         self.gameMode = 0
         self.givenID = ''
@@ -20,9 +21,10 @@ class GameRequest:
         self.deferred.addCallback(self.handshakeMaster)
         self.deferred.addCallback(self.recieveHubsPort)
         self.deferred.addCallback(self.applyNewPort)
+        reactor.callLater(3, self.switchConnectionToHub)
 
     def handshakeMaster(self, ampProto):
-        print('Handshakeing master')
+        print('Handshaking master')
         gameMode = self.gameMode
         return ampProto.callRemote(master.ReceiveGameRequestHandler, gameMode=gameMode)
 
@@ -32,6 +34,27 @@ class GameRequest:
     def applyNewPort(self, result):
         print(f'Port received from master {result}')
         self.port = result
+
+    def switchConnectionToHub(self):
+        point = TCP4ClientEndpoint(reactor, "localhost", self.port)
+        self.deferred = connectProtocol(point, amp.AMP())
+        self.deferred.addCallback(self.handshakeHub)
+        self.deferred.addCallback(self.receiveID)
+        self.deferred.addCallback(self.applyID)
+
+    def handshakeHub(self, ampProto):
+        print('Handshaking hub')
+        return ampProto.callRemote(handshake.HandshakeHandler, asked=True)
+
+    def receiveID(self, result):
+        return result['id']
+
+    def applyID(self, result):
+        id = result.decode()
+        print(f'Given ID {id}')
+        self.givenID = id
+        #reactor.stop()
+
 
 
 
