@@ -2,12 +2,12 @@ from PyQt5.QtCore import QPoint, QRectF
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem
 
-from directionEnum import Direction
-from bullet import Bullet
-from block import Block
-from blockTypeEnum import BlockType
-
 import random
+
+from BasicElements.bullet import Bullet
+from BasicElements.directionEnum import Direction
+from Block.block import Block
+from Block.blockTypeEnum import BlockType
 
 
 class Enemy(QGraphicsItem):
@@ -141,8 +141,16 @@ class Enemy(QGraphicsItem):
                     # omit bushes and ice
                     if obj.type == BlockType.bush or obj.type == BlockType.ice:
                         continue
-                objX1 = obj.x()
-                objY1 = obj.y()
+                objParent = obj.parentItem()
+                objX1 = 0
+                objY1 = 0
+                if objParent is None:
+                    objX1 = obj.x()
+                    objY1 = obj.y()
+                else:
+                    objSceneCoords = obj.mapToScene(obj.pos())
+                    objX1 = objSceneCoords.x()
+                    objY1 = objSceneCoords.y()
                 objX2 = objX1 + obj.boundingRect().width()
                 objY2 = objY1 + obj.boundingRect().height()
                 if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:

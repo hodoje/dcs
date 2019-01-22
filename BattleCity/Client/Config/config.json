@@ -7,6 +7,26 @@
 	"mainMenuTexture": "Resources/Images/UI/start_screen.png",
 	"mainMenuSelector": "Resources/Images/UI/menuSelector.png",
 	"gameOverTexture": "Resources/Images/UI/game_over.png",
+	"currentStageTexture": "Resources/Images/UI/current_stage.png",
+	"numbers":
+	{
+		"number0": "Resources/Images/Numbers/number_zero.png",
+		"number1": "Resources/Images/Numbers/number_one.png",
+		"number2": "Resources/Images/Numbers/number_two.png",
+		"number3": "Resources/Images/Numbers/number_three.png",
+		"number4": "Resources/Images/Numbers/number_four.png",
+		"number5": "Resources/Images/Numbers/number_five.png",
+		"number6": "Resources/Images/Numbers/number_six.png",
+		"number7": "Resources/Images/Numbers/number_seven.png",
+		"number8": "Resources/Images/Numbers/number_eight.png",
+		"number9": "Resources/Images/Numbers/number_nine.png"
+	},
+	"playersLives":
+	{
+		"player0": "Resources/Images/UI/player0_lives.png",
+		"player1": "Resources/Images/UI/player1_lives.png"
+	},
+	"initialPlayerLives": 2,
 	"baseTextures":
 	{
 		"aliveBase": "Resources/Images/Base/base_eagle_alive",
@@ -20,8 +40,12 @@
 		"ice": "Resources/Images/Blocks/block_ice40x40.png",
 		"water": "Resources/Images/Blocks/block_water40x40.png"
 	},
-	"enemySpawnRegionWidth": 32,
-	"enemySpawnRegionHeight": 32,
+	"hudEnemy": "Resources/Images/UI/enemies_left_icon.png",
+	"hudEnemyContainer": "Resources/Images/UI/enemies_left_container.png",
+	"hudEnemyContainerWidth": 34,
+	"hudEnemyContainerHeight": 140,
+	"enemySpawnRegionWidth": 34,
+	"enemySpawnRegionHeight": 34,
 	"enemyShootInterval": 2000,
 	"enemyMovementSpeedMap":
 	{
@@ -411,5 +435,15 @@
 				}
 			]
 		}
+	},
+	"sounds":
+	{
+        "gameStart": "Resources/Sounds/gameStart.wav",
+		"gameOver": "Resources/Sounds/gameOver.wav",
+		"menuSelect": "Resources/Sounds/menuSelectAndBulletHitWallOrBullet.wav",
+		"amazingScore": "Resources/Sounds/amazingScore.wav",
+		"tankCounter": "Resources/Sounds/tankCounter.wav",
+		"playerShot": "Resources/Sounds/playerShot.wav",
+        "explosion": "Resources/Sounds/explosion.wav"
 	}
 }

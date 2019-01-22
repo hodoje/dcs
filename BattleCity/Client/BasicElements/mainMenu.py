@@ -1,9 +1,11 @@
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, QUrl
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
-from bridge import Bridge, MenuToMainWindowData
+from Bridge.bridge import Bridge
+from Bridge.gameTypeData import GameTypeData
 
 
 class MainMenu(QGraphicsView):
@@ -18,6 +20,8 @@ class MainMenu(QGraphicsView):
         self.selectedOption = 0
         self.selectorPositions = [QPointF(180, 315), QPointF(180, 355), QPointF(180, 395)]
         self.__init_ui()
+        self.selectionSound = QSoundEffect(self)
+        self.selectionSound.setSource(QUrl.fromLocalFile(self.config.sounds["menuSelect"]))
 
     def __init_ui(self):
         # set up the scene
@@ -73,13 +77,14 @@ class MainMenu(QGraphicsView):
                 self.onlineMultiplayer()
 
     def setSelectorPos(self):
+        self.selectionSound.play()
         self.selector.setPos(self.selectorPositions[self.selectedOption])
 
     def localSinglePlayer(self):
-        self.bridge.menuToMainWindowSignal.emit(MenuToMainWindowData(False, 1))
+        self.bridge.gamePickSignal.emit(GameTypeData(False, 1))
 
     def localMultiplayer(self):
-        self.bridge.menuToMainWindowSignal.emit(MenuToMainWindowData(False, 2))
+        self.bridge.gamePickSignal.emit(GameTypeData(False, 2))
 
     def onlineMultiplayer(self):
         pass

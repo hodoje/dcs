@@ -1,5 +1,5 @@
-from enemyTankDetails import EnemyTankDetails
-from enemyTypeEnum import EnemyType
+from Enemy.enemyTankDetails import EnemyTankDetails
+from Enemy.enemyTypeEnum import EnemyType
 
 
 class EnemyTankDetailsFactory:

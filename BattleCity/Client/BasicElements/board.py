@@ -1,37 +1,47 @@
-from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF, QUrl
+from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem, QGraphicsPixmapItem
-
-from firingNotifier import FiringNotifier
-from killEmitter import KillEmitter
-from movementNotifier import MovementNotifier
-from player import Player
-from enemy import Enemy
-from block import Block
-from base import Base
-from enemyTankDetailsFactory import EnemyTankDetailsFactory
-from blockTypeEnum import BlockType
-from gameOver import GameOver
-from gameOverEmitter import GameOverEmitter
-from playerDeadEmitter import PlayerDeadEmitter
-from playerWrapper import PlayerWrapper
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 
 import random
 import sip
 
+from Block.base import Base
+from BasicElements.enemy import Enemy
+from BasicElements.gameOver import GameOver
+from BasicElements.player import Player
+from Block.block import Block
+from Block.blockTypeEnum import BlockType
+from Bridge.localGameData import LocalGameData
+from Bridge.onlineGameData import OnlineGameData
+from Emitters.gameOverEmitter import GameOverEmitter
+from Emitters.killEmitter import KillEmitter
+from Emitters.playerDeadEmitter import PlayerDeadEmitter
+from Enemy.enemyTankDetailsFactory import EnemyTankDetailsFactory
+from HUD.hudCurrentStage import HudCurrentStage
+from HUD.hudEnemyContainer import HudEnemyContainer
+from HUD.hudPlayerLives import HudPlayerLives
+from Notifiers.firingNotifier import FiringNotifier
+from Notifiers.movementNotifier import MovementNotifier
+from Player.playerDetails import PlayerDetails
+from Player.playerWrapper import PlayerWrapper
+from Powerup.deusex import DeusEx
+
 
 class Board(QGraphicsView):
-    def __init__(self, parent, config, currentMap, menuToMainWindowData):
+    def __init__(self, parent, config, currentMap, bridge, isOnline, numOfPlayers):
         QGraphicsView.__init__(self, parent)
 
         self.config = config
         self.currentMap = currentMap
-        self.menuToMainWindowData = menuToMainWindowData
+        self.bridge = bridge
+        self.isOnline = isOnline
+        self.numOfPlayers = numOfPlayers
         # set up player and enemy details
+        # incremented when generating players (used on local)
+        self.playersAlive = 0
         self.playerColors = ["yellow", "green"]
         self.playerLevels = self.config.playerLevels
-        self.numOfPlayers = self.menuToMainWindowData.numOfPlayers
         self.playerWrappers = {}
         self.enemyColor = "gray"
         self.enemiesEtds = {}
@@ -61,7 +71,7 @@ class Board(QGraphicsView):
         self.fastEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["fast"])
         self.enemyMovementTimers["fast"] = self.fastEnemyMovementTimer
 
-        # ENEMY SHOOTING TIMERS
+        # ENEMY SHOOTING TIMER
         self.enemyShootingTimer = QTimer()
         self.enemyShootingTimer.setTimerType(Qt.PreciseTimer)
         self.enemyShootingTimer.start(self.config.enemyShootInterval)
@@ -81,7 +91,7 @@ class Board(QGraphicsView):
         self.bulletTimer.setTimerType(Qt.PreciseTimer)
         self.bulletTimer.start(10)
 
-        # movement gameOverAnimation timer
+        # movement animation timer
         self.animationTimer = QTimer()
         self.animationTimer.setTimerType(Qt.PreciseTimer)
         self.animationTimer.start(100)
@@ -90,6 +100,15 @@ class Board(QGraphicsView):
         # and will give it to each bullet so the bullet can signal when an enemy has been killed
         self.killEmitter = KillEmitter()
         self.killEmitter.emitKillSignal.connect(self.killEmitterHandler)
+
+        # player dead emitter
+        # each player has one and when the player has no more lives, it emits this signal
+        self.playerDeadEmitter = PlayerDeadEmitter()
+        self.playerDeadEmitter.playerDeadSignal.connect(self.playerDeadEmitterHandler)
+
+        # explosion sound player whenever a kill is registered
+        self.explosionSound = QSoundEffect(self)
+        self.explosionSound.setSource(QUrl.fromLocalFile(self.config.sounds["explosion"]))
 
         # initialize board ui
         self.__init_ui__()
@@ -102,11 +121,7 @@ class Board(QGraphicsView):
             self.field.x() + self.field.boundingRect().width() - 34
         ]
 
-        # player dead emitter
-        self.playerDeadEmitter = PlayerDeadEmitter()
-        self.playerDeadEmitter.playerDeadSignal.connect(self.playerDeadEmitterHandler)
-
-        # GAME OVER
+        # GAME OVER setup
         self.gameOverEmitter = GameOverEmitter()
         self.gameOverEmitter.gameOverSignal.connect(self.gameOverHandler)
         # game over animation
@@ -142,14 +157,28 @@ class Board(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         # initialize the map
         self.generateMap()
-        # interface
-        currentStagePixmap = QPixmap("Resources/Images/UI/current_stage.png")
-        self.currentStage = QGraphicsPixmapItem(currentStagePixmap)
+        # HUD
+        # stage hud
+        self.currentStage = HudCurrentStage(self.config, self.currentMap)
         self.currentStage.setX(self.field.x() + self.field.boundingRect().width() + 20)
         self.currentStage.setY(self.field.y() + self.field.boundingRect().height() - 100)
         self.scene.addItem(self.currentStage)
-
-
+        # player lives hud
+        self.playersLives = {}
+        if self.isOnline:
+            pass
+        else:
+            for i in range(self.numOfPlayers):
+                playerLives = HudPlayerLives(i, self.config, self.config.initialPlayerLives)
+                playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
+                playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
+                self.scene.addItem(playerLives)
+                self.playersLives[i] = playerLives
+        # enemies left hud
+        self.enemyHud = HudEnemyContainer(self.config)
+        self.enemyHud.setX(self.field.x() + self.field.boundingRect().width() + 20)
+        self.enemyHud.setY(self.field.y() + 40)
+        self.scene.addItem(self.enemyHud)
 
     def generateMap(self):
         # save block textures
@@ -170,8 +199,10 @@ class Board(QGraphicsView):
             blockY = b["yCoord"]
             blockType = b["type"]
             block = Block(blockX, blockY, blockType, self.blockTextures[blockType])
+            # setting z value to be higher than others so the tanks would appear under the bush
             if blockType == BlockType.bush:
                 block.setZValue(2)
+            # setting z value lower than others so the tanks would appear above the ice
             elif blockType == BlockType.ice:
                 block.setZValue(-1)
             self.scene.addItem(block)
@@ -182,7 +213,7 @@ class Board(QGraphicsView):
         self.scene.addItem(self.base)
 
     def generatePlayers(self):
-        if self.menuToMainWindowData.isOnline:
+        if self.isOnline:
             pass
         else:
             for i in range(self.numOfPlayers):
@@ -193,53 +224,59 @@ class Board(QGraphicsView):
                     movementNotifier.movementSignal.connect(self.updatePosition)
                     firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    player = Player(
-                        i,
-                        self.playerColors[i],
-                        self.playerLevels,
-                        firingKey,
-                        movementKeys,
-                        self.field,
-                        self.killEmitter,
-                        self.bulletTimer,
-                        Enemy,
-                        self.animationTimer,
-                        self.gameOverEmitter,
-                        self.playerDeadEmitter)
+                    playerDetails = PlayerDetails(i, 0, None, None)
+                    playerWrapper = PlayerWrapper(playerDetails,
+                                                  self.config,
+                                                  self.playerColors[i],
+                                                  firingKey,
+                                                  movementKeys,
+                                                  firingNotifier,
+                                                  movementNotifier,
+                                                  self.playerLevels,
+                                                  self.field,
+                                                  self.killEmitter,
+                                                  self.bulletTimer,
+                                                  Enemy,
+                                                  self.animationTimer,
+                                                  self.playerDeadEmitter,
+                                                  self.gameOverEmitter)
                     startingPos = QPointF(self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
-                                       self.fieldBottom - player.boundingRect().height() - 5)
-                    player.startingPos = startingPos
-                    playerWrapper = PlayerWrapper(i, player, firingKey, movementKeys, firingNotifier, movementNotifier)
+                                       self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                    playerWrapper.player.startingPos = startingPos
                     self.playerWrappers[i] = playerWrapper
-                    self.scene.addItem(player)
-                    player.setPos(startingPos)
+                    self.scene.addItem(playerWrapper.player)
+                    self.playersAlive += 1
+                    playerWrapper.player.setPos(startingPos)
                 elif i == 1:
                     firingKey = Qt.Key_J
                     movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
                     movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                     movementNotifier.movementSignal.connect(self.updatePosition)
-                    firingNotifier = FiringNotifier(150)
+                    firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    player = Player(
-                        i,
-                        self.playerColors[i],
-                        self.playerLevels,
-                        firingKey,
-                        movementKeys,
-                        self.field,
-                        self.killEmitter,
-                        self.bulletTimer,
-                        Enemy,
-                        self.animationTimer,
-                        self.gameOverEmitter,
-                        self.playerDeadEmitter)
+                    playerDetails = PlayerDetails(i, 0, None, None)
+                    playerWrapper = PlayerWrapper(playerDetails,
+                                                  self.config,
+                                                  self.playerColors[i],
+                                                  firingKey,
+                                                  movementKeys,
+                                                  firingNotifier,
+                                                  movementNotifier,
+                                                  self.playerLevels,
+                                                  self.field,
+                                                  self.killEmitter,
+                                                  self.bulletTimer,
+                                                  Enemy,
+                                                  self.animationTimer,
+                                                  self.playerDeadEmitter,
+                                                  self.gameOverEmitter)
                     startingPos = QPointF(self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
-                                        self.fieldBottom - player.boundingRect().height() - 5)
-                    player.startingPos = startingPos
-                    playerWrapper = PlayerWrapper(i, player, firingKey, movementKeys, firingNotifier, movementNotifier)
+                                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                    playerWrapper.player.startingPos = startingPos
                     self.playerWrappers[i] = playerWrapper
-                    self.scene.addItem(player)
-                    player.setPos(startingPos)
+                    self.scene.addItem(playerWrapper.player)
+                    self.playersAlive += 1
+                    playerWrapper.player.setPos(startingPos)
 
     def generateEtd(self):
         # generate enemy details
@@ -298,6 +335,7 @@ class Board(QGraphicsView):
                       Player,
                       self.killEmitter,
                       self.gameOverEmitter)
+                self.scene.removeItem(self.enemyHud.removeEnemy())
                 self.scene.addItem(enemy)
                 enemy.setPos(posX1, posY1)
                 self.enemies[enemy.id] = enemy
@@ -338,8 +376,8 @@ class Board(QGraphicsView):
         if ked.targetType is Enemy:
             # add points, check if it's flashing so there's a powerup now on the field
             enemy = self.enemies[ked.targetId]
-            player = self.playerWrappers[ked.shooterId].player
-            player.points += enemy.tankDetails.points
+            playerWrapper = self.playerWrappers[ked.shooterId]
+            playerWrapper.playerDetails.points += enemy.tankDetails.points
 
             # remove the tank and delete it for good
             del self.enemiesEtds[ked.targetId]
@@ -350,32 +388,50 @@ class Board(QGraphicsView):
         elif ked.targetType is Player:
             player = self.playerWrappers[ked.targetId].player
             player.resetPlayer()
+            # if lives are less than 0, that means the player is dead
+            if player.lives >= 0:
+                self.playersLives[player.id].updateLives(player.lives)
+        self.explosionSound.play()
 
     def playerDeadEmitterHandler(self, playerId):
         playerWrapper = self.playerWrappers[playerId]
-        if len(self.playerWrappers) == 1:
-            self.gameOverHandler()
         # stop all player notifiers
         playerWrapper.firingNotifier.thread.terminate()
         playerWrapper.movementNotifier.thread.terminate()
-        # playerWrapper.firingNotifier.thread.wait()
-        # playerWrapper.movementNotifier.thread.wait()
-
+        playerWrapper.firingNotifier.firingSignal.disconnect()
+        playerWrapper.movementNotifier.movementSignal.disconnect()
+        # remove player from scene, but still keep it's data
         self.scene.removeItem(playerWrapper.player)
+        # delete the reference to a player because in gameover handler
+        # we will go over the rest of players and remove them from the scene
+        # so now we set the player reference to None because of the check in gameover handler
         sip.delete(playerWrapper.player)
-        del playerWrapper.player
-        del self.playerWrappers[playerId]
+        playerWrapper.player = None
+
+        self.playersAlive -= 1
+        if self.playersAlive == 0:
+            self.gameOverHandler()
 
     def gameOverHandler(self):
         if self.base.isAlive:
             self.base.destroyBase()
-            pw: PlayerWrapper
-            for pw in self.playerWrappers.values():
-                pw.firingNotifier.firingSignal.disconnect()
-                pw.movementNotifier.movementSignal.disconnect()
-                self.scene.removeItem(pw.player)
+            # endGameData = BoardToMainWindowData(self.isOnline)
+            playerWrapper: PlayerWrapper
+            for playerWrapper in self.playerWrappers.values():
+                # check if player is dead, if not, disconnect from all notifiers
+                # if he's dead, he already disconnected, and is removed from the scene
+                if playerWrapper.player is not None:
+                    playerWrapper.firingNotifier.thread.terminate()
+                    playerWrapper.movementNotifier.thread.terminate()
+                    playerWrapper.firingNotifier.firingSignal.disconnect()
+                    playerWrapper.movementNotifier.movementSignal.disconnect()
+                    self.scene.removeItem(playerWrapper.player)
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER
             self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
             # disconnect from game over signal so there won't be more animations
             self.gameOverEmitter.gameOverSignal.disconnect()
+            if self.isOnline:
+                self.bridge.onlineGameStageEndSignal.emit(OnlineGameData(self.isOnline))
+            else:
+                self.bridge.localGameStageEndSignal.emit(LocalGameData())

@@ -1,11 +1,11 @@
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
-from directionEnum import Direction
-from killEmitter import KillEmitData
-from block import Block
-from blockTypeEnum import BlockType
-from base import Base
+from Block.base import Base
+from BasicElements.directionEnum import Direction
+from Block.block import Block
+from Block.blockTypeEnum import BlockType
+from Emitters.killEmitData import KillEmitData
 
 import sip
 

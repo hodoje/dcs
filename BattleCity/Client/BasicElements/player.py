@@ -1,49 +1,58 @@
-from PyQt5.QtCore import pyqtSignal, QPoint, QRectF
+from PyQt5.QtCore import QPoint, QRectF, QUrl
 from PyQt5.QtGui import QImage
+from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsRectItem
 
-from directionEnum import Direction
-from bullet import Bullet
-from block import Block
-from blockTypeEnum import BlockType
+from BasicElements.bullet import Bullet
+from BasicElements.directionEnum import Direction
+from Block.block import Block
+from Block.blockTypeEnum import BlockType
 
 
 class Player(QGraphicsObject):
-
     def __init__(self,
-                 id,
+                 playerDetails,
+                 config,
                  color,
-                 playerLevels,
                  firingKey,
                  movementKeys,
+                 playerLevels,
                  field,
-                 killEmitter,
-                 bulletTimer,
                  targetType,
                  animationTimer,
-                 gameOverEmitter,
-                 playerDeadEmitter):
+                 bulletTimer,
+                 killEmitter,
+                 playerDeadEmitter,
+                 gameOverEmitter):
         super().__init__()
-        self.id = id
+        # only some of the properties from playerDetails are used
+        # that are needed for logic of the player
+        self.id = playerDetails.id
+        if playerDetails.lives is None:
+            self.lives = 2
+        else:
+            self.lives = playerDetails.lives
+        if playerDetails.level is None:
+            self.level = 1
+        else:
+            self.level = playerDetails.level
+        self.config = config
         self.color = color
-        self.playerLevels = playerLevels
         self.firingKey = firingKey
         self.movementKeys = movementKeys
+        self.playerLevels = playerLevels
         self.field = field
-        self.killEmitter = killEmitter
-        self.gameOverEmitter = gameOverEmitter
-        self.bulletTimer = bulletTimer
         self.targetType = targetType
+        self.animationTimer = animationTimer
+        self.bulletTimer = bulletTimer
+        self.killEmitter = killEmitter
         self.playerDeadEmitter = playerDeadEmitter
+        self.gameOverEmitter = gameOverEmitter
         self.startingPos = None
 
         # used to determine if the player can shoot
         self.firedBullets = 0
 
-        # initial player stats
-        self.lives = 2
-        self.points = 0
-        self.level = 4
         self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
         self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
 
@@ -55,6 +64,10 @@ class Player(QGraphicsObject):
         # texture animation
         self.textureTimer = animationTimer
         self.textureTimer.timeout.connect(self.updateUi)
+
+        # sounds
+        self.shotSound = QSoundEffect(self)
+        self.shotSound.setSource(QUrl.fromLocalFile(self.config.sounds["playerShot"]))
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
@@ -145,7 +158,6 @@ class Player(QGraphicsObject):
             y1 -= 1
         x2 = x1 + self.width
         y2 = y1 + self.height
-
         for obj in allObjects:
             # don't camper to self and field
             oType = type(obj)
@@ -154,8 +166,16 @@ class Player(QGraphicsObject):
                     # omit bushes and ice
                     if obj.type == BlockType.bush or obj.type == BlockType.ice:
                         continue
-                objX1 = obj.x()
-                objY1 = obj.y()
+                objParent = obj.parentItem()
+                objX1 = 0
+                objY1 = 0
+                if objParent is None:
+                    objX1 = obj.x()
+                    objY1 = obj.y()
+                else:
+                    objSceneCoords = obj.mapToScene(obj.pos())
+                    objX1 = objSceneCoords.x()
+                    objY1 = objSceneCoords.y()
                 objX2 = objX1 + obj.boundingRect().width()
                 objY2 = objY1 + obj.boundingRect().height()
                 if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
@@ -223,6 +243,7 @@ class Player(QGraphicsObject):
                     bullet.setPos(self.x() + self.boundingRect().width() + 5, self.y() + self.boundingRect().height() * 0.37)
                 # add the bullet to the scene
                 self.scene().addItem(bullet)
+                self.shotSound.play()
 
     def announceCanShoot(self, canShoot):
         if canShoot:
