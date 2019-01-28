@@ -8,6 +8,7 @@ from BasicElements.bullet import Bullet
 from BasicElements.directionEnum import Direction
 from Block.block import Block
 from Block.blockTypeEnum import BlockType
+from DeusEx.deusex import DeusEx
 
 
 class Enemy(QGraphicsItem):
@@ -141,6 +142,8 @@ class Enemy(QGraphicsItem):
                     # omit bushes and ice
                     if obj.type == BlockType.bush or obj.type == BlockType.ice:
                         continue
+                if type(obj) == DeusEx:
+                    continue
                 objParent = obj.parentItem()
                 objX1 = 0
                 objY1 = 0

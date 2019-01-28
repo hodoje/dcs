@@ -20,12 +20,12 @@ class MovementNotifier(QObject):
         # code for using threads
         self.thread = QThread()
         self.timerInterval = timerInterval
-        self.timer = QTimer()
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.emit)
+        self.emitTimer = QTimer()
+        self.emitTimer.setTimerType(Qt.PreciseTimer)
+        self.emitTimer.timeout.connect(self.emit)
         self.moveToThread(self.thread)
-        self.timer.setInterval(self.timerInterval)
-        self.thread.started.connect(self.timer.start)
+        self.emitTimer.setInterval(self.timerInterval)
+        self.thread.started.connect(self.emitTimer.start)
         self.thread.start()
 
     def add_key(self, key):
@@ -43,8 +43,4 @@ class MovementNotifier(QObject):
             # NOTE: when holding a key (although add_key is called on the board, only one element will be
             # in the self.keys list)
             mainKey = keys[0]
-            #movementKeys = [k for k in keys if k == mainKey]
             self.movementSignal.emit(mainKey)
-            #if movementKeys:
-            #    for x in movementKeys:
-            #        self.movementSignal.emit(x)

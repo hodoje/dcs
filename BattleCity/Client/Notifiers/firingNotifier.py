@@ -21,12 +21,12 @@ class FiringNotifier(QObject):
         # code for using threads
         self.thread = QThread()
         self.timerInterval = timerInterval
-        self.timer = QTimer()
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.emitKey)
+        self.emitTimer = QTimer()
+        self.emitTimer.setTimerType(Qt.PreciseTimer)
+        self.emitTimer.timeout.connect(self.emit)
+        self.emitTimer.setInterval(self.timerInterval)
         self.moveToThread(self.thread)
-        self.timer.setInterval(self.timerInterval)
-        self.thread.started.connect(self.timer.start)
+        self.thread.started.connect(self.emitTimer.start)
         self.thread.start()
 
     def add_key(self, key):
@@ -35,7 +35,7 @@ class FiringNotifier(QObject):
     def remove_key(self, key):
         self.keys.remove(key)
 
-    def emitKey(self):
-        # if self.canEmit:
-        for k in self.keys:
-            self.firingSignal.emit(k)
+    def emit(self):
+        if self.canEmit:
+            for k in self.keys:
+                self.firingSignal.emit(k)

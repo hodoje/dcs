@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF, QUrl
-from PyQt5.QtMultimedia import QSoundEffect
+from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 
@@ -14,6 +14,7 @@ from Block.block import Block
 from Block.blockTypeEnum import BlockType
 from Bridge.localGameData import LocalGameData
 from Bridge.onlineGameData import OnlineGameData
+from DeusEx.deusExSpawner import DeusExSpawner
 from Emitters.gameOverEmitter import GameOverEmitter
 from Emitters.killEmitter import KillEmitter
 from Emitters.playerDeadEmitter import PlayerDeadEmitter
@@ -25,7 +26,8 @@ from Notifiers.firingNotifier import FiringNotifier
 from Notifiers.movementNotifier import MovementNotifier
 from Player.playerDetails import PlayerDetails
 from Player.playerWrapper import PlayerWrapper
-from Powerup.deusex import DeusEx
+from DeusEx.deusex import DeusEx
+from DeusEx.deusexTypes import DeusExTypes
 
 
 class Board(QGraphicsView):
@@ -58,29 +60,34 @@ class Board(QGraphicsView):
         self.enemyMovementTimers = {}
         self.slowEnemyMovementTimer = QTimer()
         self.slowEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
-        self.slowEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["slow"])
+        self.slowEnemyMovementTimer.setInterval(self.config.enemyMovementSpeedMap["slow"])
+        self.slowEnemyMovementTimer.start()
         self.enemyMovementTimers["slow"] = self.slowEnemyMovementTimer
 
         self.normalEnemyMovementTimer = QTimer()
         self.normalEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
-        self.normalEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["normal"])
+        self.normalEnemyMovementTimer.setInterval(self.config.enemyMovementSpeedMap["normal"])
+        self.normalEnemyMovementTimer.start()
         self.enemyMovementTimers["normal"] = self.normalEnemyMovementTimer
 
         self.fastEnemyMovementTimer = QTimer()
         self.fastEnemyMovementTimer.setTimerType(Qt.PreciseTimer)
-        self.fastEnemyMovementTimer.start(self.config.enemyMovementSpeedMap["fast"])
+        self.fastEnemyMovementTimer.setInterval(self.config.enemyMovementSpeedMap["fast"])
+        self.fastEnemyMovementTimer.start()
         self.enemyMovementTimers["fast"] = self.fastEnemyMovementTimer
 
         # ENEMY SHOOTING TIMER
         self.enemyShootingTimer = QTimer()
         self.enemyShootingTimer.setTimerType(Qt.PreciseTimer)
-        self.enemyShootingTimer.start(self.config.enemyShootInterval)
+        self.enemyShootingTimer.setInterval(self.config.enemyShootInterval)
+        self.enemyShootingTimer.start()
 
         # SET UP RANDOM ENEMY SPAWNING TIMER
         self.enemySpawnTimer = QTimer()
         self.enemySpawnTimer.setTimerType(Qt.PreciseTimer)
         self.enemySpawnTimer.timeout.connect(self.generateEnemy)
-        self.enemySpawnTimer.start(self.enemySpawnInterval)
+        self.enemySpawnTimer.setInterval(self.enemySpawnInterval)
+        self.enemySpawnTimer.start()
 
         # BULLET REFRESH RATE
         # i've chose not to make different timers for different speeds just to save
@@ -89,12 +96,14 @@ class Board(QGraphicsView):
         # and bullets don't need to so we change the number of pixel as the movement pace for bullets
         self.bulletTimer = QTimer()
         self.bulletTimer.setTimerType(Qt.PreciseTimer)
-        self.bulletTimer.start(10)
+        self.bulletTimer.setInterval(10)
+        self.bulletTimer.start()
 
         # movement animation timer
         self.animationTimer = QTimer()
         self.animationTimer.setTimerType(Qt.PreciseTimer)
-        self.animationTimer.start(100)
+        self.animationTimer.setInterval(100)
+        self.animationTimer.start()
 
         # each player and enemy will have this emitter passed to them
         # and will give it to each bullet so the bullet can signal when an enemy has been killed
@@ -106,9 +115,10 @@ class Board(QGraphicsView):
         self.playerDeadEmitter = PlayerDeadEmitter()
         self.playerDeadEmitter.playerDeadSignal.connect(self.playerDeadEmitterHandler)
 
-        # explosion sound player whenever a kill is registered
-        self.explosionSound = QSoundEffect(self)
-        self.explosionSound.setSource(QUrl.fromLocalFile(self.config.sounds["explosion"]))
+        # explosion sound whenever an enemy is destroyed
+        self.enemyExplosionSound = QSound(self.config.sounds["explosion"])
+        # explosion sound whenever a player is destroyed
+        self.playerExplosionSound = QSound(self.config.sounds["playerExplosion"])
 
         # initialize board ui
         self.__init_ui__()
@@ -133,6 +143,43 @@ class Board(QGraphicsView):
         self.gameOverAnimation.setStartValue(QPointF(150, self.fieldBottom + 50))
         self.gameOverAnimation.setEndValue(QPointF(150, 150))
 
+        # deus ex spawner and its possible locations
+        self.deusExLocations = [
+            QPointF(self.field.x(), self.field.y()),
+            QPointF(self.field.x() + 160, self.field.y()),
+            QPointF(self.field.x() + 240, self.field.y()),
+            QPointF(self.field.x() + 320, self.field.y()),
+            QPointF(self.field.x(), self.field.y() + 160),
+            QPointF(self.field.x() + 160, self.field.y() + 160),
+            QPointF(self.field.x() + 240, self.field.y() + 160),
+            QPointF(self.field.x() + 320, self.field.y() + 160),
+            QPointF(self.field.x(), self.field.y() + 240),
+            QPointF(self.field.x() + 160, self.field.y() + 240),
+            QPointF(self.field.x() + 240, self.field.y() + 240),
+            QPointF(self.field.x() + 320, self.field.y() + 240),
+            QPointF(self.field.x(), self.field.y() + 320),
+            QPointF(self.field.x() + 160, self.field.y() + 320),
+            QPointF(self.field.x() + 240, self.field.y() + 320),
+            QPointF(self.field.x() + 320, self.field.y() + 320)
+        ]
+        # deusExActivities
+        self.positiveDeusExActivities = [
+            self.destroyCurrentlyAliveEnemies,
+            self.playerShield,
+            self.playerLevelUp,
+            self.playerLifeUp,
+            self.stopTheTime,
+            self.upgradeBase
+        ]
+        self.negativeDeusExActivities = [
+            self.playerLevelDown,
+            self.playerLifeDown,
+            self.playerLosePoints,
+            self.playerCantMove,
+            self.removeBaseShield
+        ]
+        self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)
+
         self.generateEtd()
         self.generatePlayers()
 
@@ -141,7 +188,8 @@ class Board(QGraphicsView):
         # set up the scene
         self.scene = QGraphicsScene()
         # these 10 subtracted pixels are for the margin
-        self.scene.setSceneRect(0, 0, self.config.mainWindowSize["width"] - 10, self.config.mainWindowSize["height"] - 10)
+        self.scene.setSceneRect(0, 0, self.config.mainWindowSize["width"] - 10,
+                                self.config.mainWindowSize["height"] - 10)
         self.scene.setBackgroundBrush(Qt.darkGray)
         # set up the view
         self.setScene(self.scene)
@@ -193,12 +241,17 @@ class Board(QGraphicsView):
         # save these for later use
         self.fieldCenterX = self.field.x() + (self.field.boundingRect().width() - 1) / 2
         self.fieldBottom = self.field.y() + self.field.boundingRect().height() - 1
+        self.baseBlocks = []
         # set up the map
         for b in self.config.maps[f"map{self.currentMap}"]["blueprint"]:
             blockX = b["xCoord"]
             blockY = b["yCoord"]
             blockType = b["type"]
-            block = Block(blockX, blockY, blockType, self.blockTextures[blockType])
+            blockIsBase = b["isBaseBlock"]
+            block = Block(blockX, blockY, blockType, blockIsBase, self.blockTextures)
+            # hold reference to base blocks
+            if block.isBaseBlock:
+                self.baseBlocks.append(block)
             # setting z value to be higher than others so the tanks would appear under the bush
             if blockType == BlockType.bush:
                 block.setZValue(2)
@@ -224,7 +277,7 @@ class Board(QGraphicsView):
                     movementNotifier.movementSignal.connect(self.updatePosition)
                     firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = PlayerDetails(i, 0, None, None)
+                    playerDetails = PlayerDetails(i, 0, None, 4)
                     playerWrapper = PlayerWrapper(playerDetails,
                                                   self.config,
                                                   self.playerColors[i],
@@ -240,8 +293,10 @@ class Board(QGraphicsView):
                                                   self.animationTimer,
                                                   self.playerDeadEmitter,
                                                   self.gameOverEmitter)
-                    startingPos = QPointF(self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
-                                       self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                    playerWrapper.player.canShootSignal.connect(self.allowFiring)
+                    startingPos = QPointF(
+                        self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
+                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                     playerWrapper.player.startingPos = startingPos
                     self.playerWrappers[i] = playerWrapper
                     self.scene.addItem(playerWrapper.player)
@@ -270,8 +325,10 @@ class Board(QGraphicsView):
                                                   self.animationTimer,
                                                   self.playerDeadEmitter,
                                                   self.gameOverEmitter)
-                    startingPos = QPointF(self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
-                                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                    playerWrapper.player.canShootSignal.connect(self.allowFiring)
+                    startingPos = QPointF(
+                        self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
+                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                     playerWrapper.player.startingPos = startingPos
                     self.playerWrappers[i] = playerWrapper
                     self.scene.addItem(playerWrapper.player)
@@ -324,17 +381,17 @@ class Board(QGraphicsView):
                 if self.currentEnemyCnt == 3 or self.currentEnemyCnt == 11 or self.currentEnemyCnt == 17:
                     isFlashing = True
                 enemy = Enemy(self.currentEnemyCnt,
-                      enemyEtd,
-                      isFlashing,
-                      self.enemyColor,
-                      self.field,
-                      self.enemyMovementTimers[enemyEtd.movementSpeed],
-                      self.enemyShootingTimer,
-                      self.animationTimer,
-                      self.bulletTimer,
-                      Player,
-                      self.killEmitter,
-                      self.gameOverEmitter)
+                              enemyEtd,
+                              isFlashing,
+                              self.enemyColor,
+                              self.field,
+                              self.enemyMovementTimers[enemyEtd.movementSpeed],
+                              self.enemyShootingTimer,
+                              self.animationTimer,
+                              self.bulletTimer,
+                              Player,
+                              self.killEmitter,
+                              self.gameOverEmitter)
                 self.scene.removeItem(self.enemyHud.removeEnemy())
                 self.scene.addItem(enemy)
                 enemy.setPos(posX1, posY1)
@@ -366,32 +423,38 @@ class Board(QGraphicsView):
             if key in playerWrapper.movementKeys.values():
                 playerWrapper.player.updatePosition(key)
 
+    def allowFiring(self, canShootSignalData):
+        self.playerWrappers[canShootSignalData.playerId].firingNotifier.canEmit = canShootSignalData.canEmit
+
     def fireCanon(self, key):
         playerWrapper: PlayerWrapper
         for playerWrapper in self.playerWrappers.values():
             if key == playerWrapper.firingKey:
                 playerWrapper.player.shoot(key)
 
-    def killEmitterHandler(self, ked):
-        if ked.targetType is Enemy:
+    def killEmitterHandler(self, killEmitterData):
+        if killEmitterData.targetType is Enemy:
             # add points, check if it's flashing so there's a powerup now on the field
-            enemy = self.enemies[ked.targetId]
-            playerWrapper = self.playerWrappers[ked.shooterId]
-            playerWrapper.playerDetails.points += enemy.tankDetails.points
-
-            # remove the tank and delete it for good
-            del self.enemiesEtds[ked.targetId]
-            self.scene.removeItem(self.enemies[ked.targetId])
-            sip.delete(self.enemies[ked.targetId])
-            del self.enemies[ked.targetId]
+            enemy = self.enemies[killEmitterData.targetId]
+            playerWrapper = self.playerWrappers[killEmitterData.shooterId]
+            playerWrapper.player.points += enemy.tankDetails.points
+            # if the enemy is flashing then give the players a positive DeusEx
+            if enemy.isFlashing:
+                self.deusExSpawner.spawn(isPositive=True)
+            # remove the tank, its details and delete it for good
+            del self.enemiesEtds[killEmitterData.targetId]
+            self.scene.removeItem(self.enemies[killEmitterData.targetId])
+            sip.delete(self.enemies[killEmitterData.targetId])
+            del self.enemies[killEmitterData.targetId]
             self.enemiesCurrentlyAlive -= 1
-        elif ked.targetType is Player:
-            player = self.playerWrappers[ked.targetId].player
+            self.enemyExplosionSound.play()
+        elif killEmitterData.targetType is Player:
+            player = self.playerWrappers[killEmitterData.targetId].player
             player.resetPlayer()
             # if lives are less than 0, that means the player is dead
             if player.lives >= 0:
                 self.playersLives[player.id].updateLives(player.lives)
-        self.explosionSound.play()
+            self.playerExplosionSound.play()
 
     def playerDeadEmitterHandler(self, playerId):
         playerWrapper = self.playerWrappers[playerId]
@@ -408,6 +471,7 @@ class Board(QGraphicsView):
         sip.delete(playerWrapper.player)
         playerWrapper.player = None
 
+        # decrease the number of players alive, if now is 0, all players are dead and the game is over
         self.playersAlive -= 1
         if self.playersAlive == 0:
             self.gameOverHandler()
@@ -435,3 +499,137 @@ class Board(QGraphicsView):
                 self.bridge.onlineGameStageEndSignal.emit(OnlineGameData(self.isOnline))
             else:
                 self.bridge.localGameStageEndSignal.emit(LocalGameData())
+
+    def deusExActivate(self, deusExSignalData):
+        for player in deusExSignalData.markedPlayers:
+            pw = self.playerWrappers[player.id]
+            if deusExSignalData.deusExType is DeusExTypes.POSITIVE:
+                random.choice(self.positiveDeusExActivities)(pw)
+            else:
+                random.choice(self.negativeDeusExActivities)(pw)
+        self.deusExSpawner.spawnTimer.start()
+
+    # DEUS EX ACTIVITIES
+    # POSITIVE
+    def destroyCurrentlyAliveEnemies(self, pw=None):
+        if self.enemies:
+            for id, enemy in self.enemies.items():
+                del self.enemiesEtds[id]
+                self.scene.removeItem(enemy)
+                # although this looks like it would produce an error because of deleting elements from currently
+                # iterating collection, it won't because we're deleting the c++ object and not the python wrapper
+                sip.delete(enemy)
+            self.enemies.clear()
+            self.enemiesCurrentlyAlive = 0
+            self.explosionSound.play()
+
+    def playerShield(self, pw=None):
+        pw.player.isShielded = True
+        pw.player.shieldTimer.start()
+        playerShieldTimer = QTimer()
+        playerShieldTimer.setTimerType(Qt.PreciseTimer)
+        playerShieldTimer.setInterval(15000)
+        playerShieldTimer.timeout.connect(lambda: self.afterPlayerShield(pw))
+        playerShieldTimer.start()
+        setattr(self, f"playerShieldTimer{pw.player.id}", playerShieldTimer)
+
+    def afterPlayerShield(self, pw=None):
+        pw.player.shieldTimer.stop()
+        pw.player.isShielded = False
+        timer = getattr(self, f"playerShieldTimer{pw.player.id}", None)
+        if timer is not None:
+            timer.stop()
+            del timer
+
+    def upgradeBase(self, pw=None):
+        for baseBlock in self.baseBlocks:
+            if baseBlock.isHidden:
+                self.scene.addItem(baseBlock)
+                baseBlock.isHidden = False
+            baseBlock.type = BlockType.steel
+            baseBlock.updateTexture()
+        self.upgradeBaseTimer = QTimer()
+        self.upgradeBaseTimer.setTimerType(Qt.PreciseTimer)
+        self.upgradeBaseTimer.timeout.connect(self.afterUpgradeBase)
+        self.upgradeBaseTimer.setInterval(15000)
+        self.upgradeBaseTimer.start()
+
+    def afterUpgradeBase(self, pw=None):
+        for baseBlock in self.baseBlocks:
+            baseBlock.type = BlockType.brick
+            baseBlock.updateTexture()
+        self.upgradeBaseTimer.stop()
+        del self.upgradeBaseTimer
+
+    def playerLevelUp(self, pw=None):
+        pw.player.levelUp()
+
+    def playerLifeUp(self, pw=None):
+        pw.player.lives += 1
+        self.playersLives[pw.player.id].updateLives(pw.player.lives)
+
+    def stopTheTime(self, pw=None):
+        self.enemyShootingTimer.stop()
+        for timer in self.enemyMovementTimers.values():
+            timer.stop()
+        self.stopTheTimeTimer = QTimer()
+        self.stopTheTimeTimer.setTimerType(Qt.PreciseTimer)
+        self.stopTheTimeTimer.timeout.connect(self.afterStopTheTime)
+        self.stopTheTimeTimer.setInterval(10000)
+        self.stopTheTimeTimer.start()
+
+    def afterStopTheTime(self, pw=None):
+        self.enemyShootingTimer.start()
+        for timer in self.enemyMovementTimers.values():
+            timer.start()
+        self.stopTheTimeTimer.stop()
+        del self.stopTheTimeTimer
+
+    # NEGATIVE
+    def playerLevelDown(self, pw=None):
+        pw.player.levelDown()
+
+    def playerLifeDown(self, pw=None):
+        pw.player.lives -= 1
+        self.playersLives[pw.player.id].updateLives(pw.player.lives)
+
+    def playerLosePoints(self, pw=None):
+        pw.player.points -= 2000
+
+    def playerCantMove(self, pw: PlayerWrapper):
+        pw.firingNotifier.emitTimer.stop()
+        pw.movementNotifier.emitTimer.stop()
+        playerCantMoveTimer = QTimer()
+        playerCantMoveTimer.setTimerType(Qt.PreciseTimer)
+        playerCantMoveTimer.timeout.connect(lambda: self.afterPlayerCantMove(pw))
+        playerCantMoveTimer.setInterval(10000)
+        playerCantMoveTimer.start()
+        setattr(self, f"playerCantMoveTimer{pw.player.id}", playerCantMoveTimer)
+
+    def afterPlayerCantMove(self, pw):
+        pw.firingNotifier.emitTimer.start()
+        pw.movementNotifier.emitTimer.start()
+        timer = getattr(self, f"playerCantMoveTimer{pw.player.id}", None)
+        if timer is not None:
+            timer.stop()
+            del timer
+
+    def removeBaseShield(self, pw=None):
+        for baseBlock in self.baseBlocks:
+            baseBlock.isHidden = True
+            self.scene.removeItem(baseBlock)
+        self.removeBaseShieldTimer = QTimer()
+        self.removeBaseShieldTimer.setTimerType(Qt.PreciseTimer)
+        self.removeBaseShieldTimer.timeout.connect(self.afterRemoveBaseShield)
+        self.removeBaseShieldTimer.setInterval(15000)
+        self.removeBaseShieldTimer.start()
+
+    def afterRemoveBaseShield(self):
+        for baseBlock in self.baseBlocks:
+            # this check is needed because upgrade base adds the base blocks to the scene
+            # practically annulling the remove base effect
+            if baseBlock.isHidden:
+                baseBlock.isHidden = False
+                self.scene.addItem(baseBlock)
+        self.removeBaseShieldTimer.stop()
+        del self.removeBaseShieldTimer

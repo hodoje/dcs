@@ -1,15 +1,19 @@
-from PyQt5.QtCore import QPoint, QRectF, QUrl
+from PyQt5.QtCore import QPoint, QRectF, pyqtSignal, QTimer, Qt
 from PyQt5.QtGui import QImage
-from PyQt5.QtMultimedia import QSoundEffect
+from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsRectItem
 
 from BasicElements.bullet import Bullet
 from BasicElements.directionEnum import Direction
 from Block.block import Block
 from Block.blockTypeEnum import BlockType
+from DeusEx.deusex import DeusEx
+from Player.canPlayerShootSignalData import CanPlayerShootSignalData
 
 
 class Player(QGraphicsObject):
+    canShootSignal = pyqtSignal(CanPlayerShootSignalData)
+
     def __init__(self,
                  playerDetails,
                  config,
@@ -28,6 +32,7 @@ class Player(QGraphicsObject):
         # only some of the properties from playerDetails are used
         # that are needed for logic of the player
         self.id = playerDetails.id
+        self.points = playerDetails.points
         if playerDetails.lives is None:
             self.lives = 2
         else:
@@ -38,6 +43,7 @@ class Player(QGraphicsObject):
             self.level = playerDetails.level
         self.config = config
         self.color = color
+        self.isShielded = False
         self.firingKey = firingKey
         self.movementKeys = movementKeys
         self.playerLevels = playerLevels
@@ -66,19 +72,26 @@ class Player(QGraphicsObject):
         self.textureTimer.timeout.connect(self.updateUi)
 
         # sounds
-        self.shotSound = QSoundEffect(self)
-        self.shotSound.setSource(QUrl.fromLocalFile(self.config.sounds["playerShot"]))
+        self.shotSound = QSound(self.config.sounds["playerShot"])
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point
-        # textures are .png images 40px x 40px
-        self.texture1 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.level}.png")
-        self.texture2 = QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.level}.png")
-        self.height = self.texture1.height()
-        self.width = self.texture1.width()
+        self.textures = []
+        self.textures.append(QImage(f"Resources/Images/Tanks/{self.color}/{self.color}FP.v{self.level}.png"))
+        self.textures.append(QImage(f"Resources/Images/Tanks/{self.color}/{self.color}SP.v{self.level}.png"))
+        self.currentTexture = 0
+        self.height = self.textures[0].height()
+        self.width = self.textures[0].width()
+        self.shieldTextures = []
+        self.shieldTextures.append(QImage(f"Resources/Images/Shield/shield{self.width}FP.png"))
+        self.shieldTextures.append(QImage(f"Resources/Images/Shield/shield{self.width}SP.png"))
+        self.currentShieldTexture = 0
+        self.shieldTimer = QTimer()
+        self.shieldTimer.setTimerType(Qt.PreciseTimer)
+        self.shieldTimer.setInterval(50)
+        self.shieldTimer.timeout.connect(self.shieldUi)
         self.m_boundingRect = QRectF(0, 0, self.width, self.height)
-        self.textures = [self.texture2, self.texture1]
-        self.isFirstTexture = 1
+        # setting transform origin point to center of the player so the rotation will be in regard to the center
         self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
 
     # override default bounding rect
@@ -87,37 +100,17 @@ class Player(QGraphicsObject):
 
     # override default paint
     def paint(self, QPainter, QStyleOptionGraphicsItem, QWidget):
-        if self.isFirstTexture:
-            QPainter.drawImage(0, 0, self.texture1)
-        else:
-            QPainter.drawImage(0, 0, self.texture2)
+        QPainter.drawImage(0, 0, self.textures[self.currentTexture])
+        if self.isShielded:
+            QPainter.drawImage(0, 0, self.shieldTextures[self.currentShieldTexture])
 
     def updateUi(self):
-        self.isFirstTexture = not self.isFirstTexture
-        # self.update() will schedule a paint event on the parent QGraphicsView
-        # so paint won't execute immediately
+        self.currentTexture = 1 if self.currentTexture == 0 else 0
         self.update()
 
-    def levelUp(self):
-        if not self.level == 4:
-            self.level += 1
-            self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
-            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
-            self.updateTextures()
-
-    def resetPlayer(self):
-        self.lives -= 1
-        if self.lives < 0:
-            self.playerDeadEmitter.playerDeadSignal.emit(self.id)
-            return
-        self.level = 1
-        self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
-        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
-        self.updateTextures()
-        self.setPos(self.startingPos)
-
-    def updateTextures(self):
-        self.__init_ui__()
+    def shieldUi(self):
+        self.currentShieldTexture = 1 if self.currentShieldTexture == 0 else 0
+        self.update()
 
     # movements
     def moveRight(self):
@@ -166,6 +159,8 @@ class Player(QGraphicsObject):
                     # omit bushes and ice
                     if obj.type == BlockType.bush or obj.type == BlockType.ice:
                         continue
+                if type(obj) == DeusEx:
+                    continue
                 objParent = obj.parentItem()
                 objX1 = 0
                 objY1 = 0
@@ -246,7 +241,43 @@ class Player(QGraphicsObject):
                 self.shotSound.play()
 
     def announceCanShoot(self, canShoot):
+        # if canShoot is true, that means the bullet is destroyed, decrease fired bullets number and emit it can shoot
+        # if canShoot is false, that means the the player fired a bullet, but don't emit the player can shoot
+        # immediately but first check if fired bullets reached rate of fire, if reached, emit player cannot shoot
+        # else, don't emit anything (which means that the firing notifier will still have canEmit flag set to True)
         if canShoot:
             self.firedBullets -= 1
+            self.canShootSignal.emit(CanPlayerShootSignalData(self.id, canShoot))
         else:
             self.firedBullets += 1
+            if self.firedBullets == self.rateOfFire:
+                self.canShootSignal.emit(CanPlayerShootSignalData(self.id, canShoot))
+
+# will be used for DeusEx and will be wrapped in player wrapper
+    def levelUp(self):
+        if not self.level == 4:
+            self.level += 1
+            self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
+            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+            self.updateTextures()
+
+    def levelDown(self):
+        if self.level != 1:
+            self.level -= 1
+            self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
+            self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+            self.updateTextures()
+
+    def resetPlayer(self):
+        self.lives -= 1
+        if self.lives < 0:
+            self.playerDeadEmitter.playerDeadSignal.emit(self.id)
+            return
+        self.level = 1
+        self.rateOfFire = self.playerLevels[f"star{self.level}"]["rateOfFire"]
+        self.bulletSpeed = self.playerLevels[f"star{self.level}"]["bulletSpeed"]
+        self.updateTextures()
+        self.setPos(self.startingPos)
+
+    def updateTextures(self):
+        self.__init_ui__()

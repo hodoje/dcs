@@ -39,3 +39,12 @@ class PlayerWrapper:
                              killEmitter,
                              playerDeadEmitter,
                              gameOverEmitter)
+
+    def getPlayerDetails(self):
+        return PlayerDetails(self.player.id, self.player.points, self.player.lives, self.player.level)
+
+    def levelUp(self):
+        self.player.levelUp()
+
+    def levelDown(self):
+        self.player.levelDown()

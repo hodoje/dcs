@@ -11,10 +11,10 @@ class EnemyTankDetailsFactory:
         self.extractNumberOfTanksPerType()
 
     def extractNumberOfTanksPerType(self):
-        self.basicTanksNum = self.enemiesToGenerate[EnemyType.basic]
-        self.fastTanksNum = self.enemiesToGenerate[EnemyType.fast]
-        self.powerTanksNum = self.enemiesToGenerate[EnemyType.power]
-        self.armorTanksNum = self.enemiesToGenerate[EnemyType.armor]
+        self.basicTanksNum = self.enemiesToGenerate[EnemyType.BASIC]
+        self.fastTanksNum = self.enemiesToGenerate[EnemyType.FAST]
+        self.powerTanksNum = self.enemiesToGenerate[EnemyType.POWER]
+        self.armorTanksNum = self.enemiesToGenerate[EnemyType.ARMOR]
 
     def generateEnemiesDetails(self):
         etdMap = {}
@@ -22,41 +22,41 @@ class EnemyTankDetailsFactory:
         if self.basicTanksNum > 0:
             for b in range(self.basicTanksNum):
                 etd = EnemyTankDetails(
-                    self.enemyTypeIds[self.enemyTypes[EnemyType.basic]["typeIdKey"]],
-                    self.enemyTypes[EnemyType.basic]["points"],
-                    self.enemyTypes[EnemyType.basic]["health"],
-                    self.enemyTypes[EnemyType.basic]["movementSpeed"],
-                    self.bulletSpeedMap[self.enemyTypes[EnemyType.basic]["bulletSpeed"]])
+                    self.enemyTypeIds[self.enemyTypes[EnemyType.BASIC]["typeIdKey"]],
+                    self.enemyTypes[EnemyType.BASIC]["points"],
+                    self.enemyTypes[EnemyType.BASIC]["health"],
+                    self.enemyTypes[EnemyType.BASIC]["movementSpeed"],
+                    self.bulletSpeedMap[self.enemyTypes[EnemyType.BASIC]["bulletSpeed"]])
                 etdMap[idx] = etd
                 idx += 1
         if self.fastTanksNum > 0:
             for f in range(self.fastTanksNum):
                 etd = EnemyTankDetails(
-                    self.enemyTypeIds[self.enemyTypes[EnemyType.fast]["typeIdKey"]],
-                    self.enemyTypes[EnemyType.fast]["points"],
-                    self.enemyTypes[EnemyType.fast]["health"],
-                    self.enemyTypes[EnemyType.fast]["movementSpeed"],
-                    self.bulletSpeedMap[self.enemyTypes[EnemyType.fast]["bulletSpeed"]])
+                    self.enemyTypeIds[self.enemyTypes[EnemyType.FAST]["typeIdKey"]],
+                    self.enemyTypes[EnemyType.FAST]["points"],
+                    self.enemyTypes[EnemyType.FAST]["health"],
+                    self.enemyTypes[EnemyType.FAST]["movementSpeed"],
+                    self.bulletSpeedMap[self.enemyTypes[EnemyType.FAST]["bulletSpeed"]])
                 etdMap[idx] = etd
                 idx += 1
         if self.powerTanksNum > 0:
             for p in range(self.powerTanksNum):
                 etd = EnemyTankDetails(
-                    self.enemyTypeIds[self.enemyTypes[EnemyType.power]["typeIdKey"]],
-                    self.enemyTypes[EnemyType.power]["points"],
-                    self.enemyTypes[EnemyType.power]["health"],
-                    self.enemyTypes[EnemyType.power]["movementSpeed"],
-                    self.bulletSpeedMap[self.enemyTypes[EnemyType.power]["bulletSpeed"]])
+                    self.enemyTypeIds[self.enemyTypes[EnemyType.POWER]["typeIdKey"]],
+                    self.enemyTypes[EnemyType.POWER]["points"],
+                    self.enemyTypes[EnemyType.POWER]["health"],
+                    self.enemyTypes[EnemyType.POWER]["movementSpeed"],
+                    self.bulletSpeedMap[self.enemyTypes[EnemyType.POWER]["bulletSpeed"]])
                 etdMap[idx] = etd
                 idx += 1
         if self.armorTanksNum > 0:
             for a in range(self.armorTanksNum):
                 etd = EnemyTankDetails(
-                    self.enemyTypeIds[self.enemyTypes[EnemyType.armor]["typeIdKey"]],
-                    self.enemyTypes[EnemyType.armor]["points"],
-                    self.enemyTypes[EnemyType.armor]["health"],
-                    self.enemyTypes[EnemyType.armor]["movementSpeed"],
-                    self.bulletSpeedMap[self.enemyTypes[EnemyType.armor]["bulletSpeed"]])
+                    self.enemyTypeIds[self.enemyTypes[EnemyType.ARMOR]["typeIdKey"]],
+                    self.enemyTypes[EnemyType.ARMOR]["points"],
+                    self.enemyTypes[EnemyType.ARMOR]["health"],
+                    self.enemyTypes[EnemyType.ARMOR]["movementSpeed"],
+                    self.bulletSpeedMap[self.enemyTypes[EnemyType.ARMOR]["bulletSpeed"]])
                 etdMap[idx] = etd
                 idx += 1
         return etdMap

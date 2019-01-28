@@ -108,9 +108,14 @@ class Bullet(QGraphicsPixmapItem):
                 if oType == self.owner.targetType or oType == Bullet or oType == Block or oType == Base:
                     # remove the object and do additional job according to the object type
                     if oType == self.owner.targetType:
-                        # if it's a target then emit a kill
-                        killEmitData = KillEmitData(self.owner.id, obj.id, oType)
-                        self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                        # if it's a target and it's not shielded then emit a kill
+                        if hasattr(obj, "isShielded"):
+                            if not obj.isShielded:
+                                killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                                self.owner.killEmitter.emitKillSignal.emit(killEmitData)
+                        else:
+                            killEmitData = KillEmitData(self.owner.id, obj.id, oType)
+                            self.owner.killEmitter.emitKillSignal.emit(killEmitData)
                         # remove the bullet
                         self.scene().removeItem(self)
                         self.owner.announceCanShoot(True)

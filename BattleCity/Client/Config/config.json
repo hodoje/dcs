@@ -141,297 +141,356 @@
 				{
 					"xCoord": 80,
 					"yCoord": 60,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 60,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 60,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 60,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 60,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 60,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 100,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 100,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 100,
-					"type": "bush"
+					"type": "bush",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 100,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 100,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 100,
-					"type": "ice"
+					"type": "ice",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 140,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 140,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 140,
-					"type": "water"
+					"type": "water",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 280,
 					"yCoord": 160,
-					"type": "steel"
+					"type": "steel",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 140,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 140,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 140,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 180,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 180,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 180,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 180,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 180,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 180,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 220,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 220,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 220,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 220,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 260,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 260,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 40,
 					"yCoord": 300,
-					"type" : "steel"
+					"type" : "steel",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 120,
 					"yCoord": 300,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 300,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 300,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 440,
 					"yCoord": 300,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 520,
 					"yCoord": 300,
-					"type": "steel"
+					"type": "steel",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 340,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 340,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 380,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 380,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 380,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 280,
 					"yCoord": 360,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 380,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 380,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 380,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 420,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 420,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 420,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 420,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 80,
 					"yCoord": 460,
-					"type" : "brick"
+					"type" : "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 160,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 400,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 480,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 0
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 500,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 1
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 500,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 1
 				},
 				{
 					"xCoord": 240,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 1
 				},
 				{
 					"xCoord": 320,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 1
 				},
 				{
 					"xCoord": 280,
 					"yCoord": 460,
-					"type": "brick"
+					"type": "brick",
+					"isBaseBlock": 1
 				}
 			]
 		}
@@ -444,6 +503,11 @@
 		"amazingScore": "Resources/Sounds/amazingScore.wav",
 		"tankCounter": "Resources/Sounds/tankCounter.wav",
 		"playerShot": "Resources/Sounds/playerShot.wav",
-        "explosion": "Resources/Sounds/explosion.wav"
+        "explosion": "Resources/Sounds/explosion.wav",
+		"playerExplosion": "Resources/Sounds/playerExplosion.wav",
+		"dangerZone": "Resources/Sounds/dangerZone.wav",
+		"dangerZoneEnd": "Resources/Sounds/dangerZoneEnd.wav",
+		"nondangerZone": "Resources/Sounds/nondangerZone.wav",
+		"nondangerZoneEnd": "Resources/Sounds/nondangerZoneEnd.wav"
 	}
 }
