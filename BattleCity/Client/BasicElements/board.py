@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 import random
 import sip
 
+from BasicElements.directionEnum import Direction
 from Block.base import Base
 from BasicElements.enemy import Enemy
 from BasicElements.gameOver import GameOver
@@ -164,12 +165,12 @@ class Board(QGraphicsView):
         ]
         # deusExActivities
         self.positiveDeusExActivities = [
-            self.destroyCurrentlyAliveEnemies,
-            self.playerShield,
-            self.playerLevelUp,
-            self.playerLifeUp,
-            self.stopTheTime,
-            self.upgradeBase
+            # self.destroyCurrentlyAliveEnemies,
+            # self.playerShield,
+            self.playerLevelUp
+            # self.playerLifeUp,
+            # self.stopTheTime,
+            # self.upgradeBase
         ]
         self.negativeDeusExActivities = [
             self.playerLevelDown,
@@ -277,7 +278,7 @@ class Board(QGraphicsView):
                     movementNotifier.movementSignal.connect(self.updatePosition)
                     firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = PlayerDetails(i, 0, None, 4)
+                    playerDetails = PlayerDetails(i, 0, None, None)
                     playerWrapper = PlayerWrapper(playerDetails,
                                                   self.config,
                                                   self.playerColors[i],
@@ -563,6 +564,16 @@ class Board(QGraphicsView):
 
     def playerLevelUp(self, pw=None):
         pw.player.levelUp()
+        for attr, value in pw.player.__dict__.items():
+            if not pw.player.canMove(value):
+                if value is Direction.RIGHT:
+                    pw.player.setPos(pw.player.x() - 3, pw.player.y())
+                elif value is Direction.LEFT:
+                    pw.player.setPos(pw.player.x() + 3, pw.player.y())
+                elif value is Direction.DOWN:
+                    pw.player.setPos(pw.player.x(), pw.player.y() - 3)
+                elif value is Direction.UP:
+                    pw.player.setPos(pw.player.x(), pw.player.y() + 3)
 
     def playerLifeUp(self, pw=None):
         pw.player.lives += 1
@@ -588,6 +599,16 @@ class Board(QGraphicsView):
     # NEGATIVE
     def playerLevelDown(self, pw=None):
         pw.player.levelDown()
+        for attr, value in pw.player.__dict__.items():
+            if not pw.player.canMove(value):
+                if value is Direction.RIGHT:
+                    pw.player.setPos(pw.player.x() - 3, pw.player.y())
+                elif value is Direction.LEFT:
+                    pw.player.setPos(pw.player.x() + 3, pw.player.y())
+                elif value is Direction.DOWN:
+                    pw.player.setPos(pw.player.x(), pw.player.y() - 3)
+                elif value is Direction.UP:
+                    pw.player.setPos(pw.player.x(), pw.player.y() + 3)
 
     def playerLifeDown(self, pw=None):
         pw.player.lives -= 1

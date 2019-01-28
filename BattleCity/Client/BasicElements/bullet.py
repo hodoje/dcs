@@ -153,4 +153,7 @@ class Bullet(QGraphicsPixmapItem):
                             pass
                     elif oType == Base:
                         self.owner.gameOverEmitter.gameOverSignal.emit(1)
+                        self.scene().removeItem(self)
+                        sip.delete(self)
+                        del self
                     return
