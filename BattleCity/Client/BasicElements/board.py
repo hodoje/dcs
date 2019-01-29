@@ -165,12 +165,12 @@ class Board(QGraphicsView):
         ]
         # deusExActivities
         self.positiveDeusExActivities = [
-            # self.destroyCurrentlyAliveEnemies,
-            # self.playerShield,
-            self.playerLevelUp
-            # self.playerLifeUp,
-            # self.stopTheTime,
-            # self.upgradeBase
+            self.destroyCurrentlyAliveEnemies,
+            self.playerShield,
+            self.playerLevelUp,
+            self.playerLifeUp,
+            self.stopTheTime,
+            self.upgradeBase
         ]
         self.negativeDeusExActivities = [
             self.playerLevelDown,
@@ -564,16 +564,60 @@ class Board(QGraphicsView):
 
     def playerLevelUp(self, pw=None):
         pw.player.levelUp()
-        for attr, value in pw.player.__dict__.items():
-            if not pw.player.canMove(value):
-                if value is Direction.RIGHT:
-                    pw.player.setPos(pw.player.x() - 3, pw.player.y())
-                elif value is Direction.LEFT:
-                    pw.player.setPos(pw.player.x() + 3, pw.player.y())
-                elif value is Direction.DOWN:
-                    pw.player.setPos(pw.player.x(), pw.player.y() - 3)
-                elif value is Direction.UP:
-                    pw.player.setPos(pw.player.x(), pw.player.y() + 3)
+        # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
+        allObjects = self.scene.items()
+        x1 = pw.player.x()
+        y1 = pw.player.y()
+        x2 = x1 + pw.player.width
+        y2 = y1 + pw.player.height
+        for obj in allObjects:
+            oType = type(obj)
+            if obj != pw.player and oType != QGraphicsRectItem:
+                if type(obj) == Block:
+                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                        continue
+                if type(obj) == DeusEx:
+                    continue
+                objParent = obj.parentItem()
+                objX1 = 0
+                objY1 = 0
+                if objParent is None:
+                    objX1 = obj.x()
+                    objY1 = obj.y()
+                else:
+                    objSceneCoords = obj.mapToScene(obj.pos())
+                    objX1 = objSceneCoords.x()
+                    objY1 = objSceneCoords.y()
+                objX2 = objX1 + obj.boundingRect().width()
+                objY2 = objY1 + obj.boundingRect().height()
+                if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
+                    # handle the x axis
+                    deltaX = None
+                    deltaY = None
+                    if x1 < objX1:
+                        deltaX = x2 - objX1
+                        x1 -= deltaX
+                    elif x1 > objX1:
+                        deltaX = objX2 - x1
+                        x1 += deltaX
+                    else:
+                        deltaX = 0
+                    # handle the y axis
+                    if y1 < objY1:
+                        deltaY = y2 - objY1
+                        y1 -= (deltaY + 1)
+                    elif y1 > objY1:
+                        deltaY = objY2 - y1
+                        y1 += deltaY + 1
+                    else:
+                        deltaY = 0
+
+                    # draw in paint these situations and you'll understand why i chose this approach
+                    if deltaX > deltaY:
+                        pw.player.setY(y1)
+                    else:
+                        pw.player.setX(x1)
+                    break
 
     def playerLifeUp(self, pw=None):
         pw.player.lives += 1
@@ -599,16 +643,60 @@ class Board(QGraphicsView):
     # NEGATIVE
     def playerLevelDown(self, pw=None):
         pw.player.levelDown()
-        for attr, value in pw.player.__dict__.items():
-            if not pw.player.canMove(value):
-                if value is Direction.RIGHT:
-                    pw.player.setPos(pw.player.x() - 3, pw.player.y())
-                elif value is Direction.LEFT:
-                    pw.player.setPos(pw.player.x() + 3, pw.player.y())
-                elif value is Direction.DOWN:
-                    pw.player.setPos(pw.player.x(), pw.player.y() - 3)
-                elif value is Direction.UP:
-                    pw.player.setPos(pw.player.x(), pw.player.y() + 3)
+        # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
+        allObjects = self.scene.items()
+        x1 = pw.player.x()
+        y1 = pw.player.y()
+        x2 = x1 + pw.player.width
+        y2 = y1 + pw.player.height
+        for obj in allObjects:
+            oType = type(obj)
+            if obj != pw.player and oType != QGraphicsRectItem:
+                if type(obj) == Block:
+                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                        continue
+                if type(obj) == DeusEx:
+                    continue
+                objParent = obj.parentItem()
+                objX1 = 0
+                objY1 = 0
+                if objParent is None:
+                    objX1 = obj.x()
+                    objY1 = obj.y()
+                else:
+                    objSceneCoords = obj.mapToScene(obj.pos())
+                    objX1 = objSceneCoords.x()
+                    objY1 = objSceneCoords.y()
+                objX2 = objX1 + obj.boundingRect().width()
+                objY2 = objY1 + obj.boundingRect().height()
+                if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
+                    # handle the x axis
+                    deltaX = None
+                    deltaY = None
+                    if x1 < objX1:
+                        deltaX = x2 - objX1
+                        x1 -= deltaX
+                    elif x1 > objX1:
+                        deltaX = objX2 - x1
+                        x1 += deltaX
+                    else:
+                        deltaX = 0
+                    # handle the y axis
+                    if y1 < objY1:
+                        deltaY = y2 - objY1
+                        y1 -= (deltaY + 1)
+                    elif y1 > objY1:
+                        deltaY = objY2 - y1
+                        y1 += deltaY + 1
+                    else:
+                        deltaY = 0
+
+                    # draw in paint these situations and you'll understand why i chose this approach
+                    if deltaX > deltaY:
+                        pw.player.setY(y1)
+                    else:
+                        pw.player.setX(x1)
+                    break
 
     def playerLifeDown(self, pw=None):
         pw.player.lives -= 1
