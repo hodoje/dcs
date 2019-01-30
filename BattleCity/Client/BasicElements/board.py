@@ -435,7 +435,7 @@ class Board(QGraphicsView):
 
     def killEmitterHandler(self, killEmitterData):
         if killEmitterData.targetType is Enemy:
-            # add points, check if it's flashing so there's a powerup now on the field
+            # add points, check if the enemy is flashing and if so, spawn a positive DeusEx
             enemy = self.enemies[killEmitterData.targetId]
             playerWrapper = self.playerWrappers[killEmitterData.shooterId]
             playerWrapper.player.points += enemy.tankDetails.points
@@ -447,6 +447,7 @@ class Board(QGraphicsView):
             self.scene.removeItem(self.enemies[killEmitterData.targetId])
             sip.delete(self.enemies[killEmitterData.targetId])
             del self.enemies[killEmitterData.targetId]
+
             self.enemiesCurrentlyAlive -= 1
             self.enemyExplosionSound.play()
         elif killEmitterData.targetType is Player:
@@ -481,6 +482,7 @@ class Board(QGraphicsView):
         if self.base.isAlive:
             self.base.destroyBase()
             # endGameData = BoardToMainWindowData(self.isOnline)
+            self.deusExSpawner.spawnTimer.stop()
             playerWrapper: PlayerWrapper
             for playerWrapper in self.playerWrappers.values():
                 # check if player is dead, if not, disconnect from all notifiers
@@ -522,7 +524,7 @@ class Board(QGraphicsView):
                 sip.delete(enemy)
             self.enemies.clear()
             self.enemiesCurrentlyAlive = 0
-            self.explosionSound.play()
+            self.enemyExplosionSound.play()
 
     def playerShield(self, pw=None):
         pw.player.isShielded = True
