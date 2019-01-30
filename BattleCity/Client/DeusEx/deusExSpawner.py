@@ -29,6 +29,6 @@ class DeusExSpawner:
         deusEx = DeusEx(self.config, deusExType)
         deusEx.deusExActivateSignal.connect(self.action)
         deusEx.setZValue(2)
-        self.scene.addItem(deusEx)
         deusEx.setPos(random.choice(self.locations))
+        self.scene.addItem(deusEx)
         self.spawnTimer.stop()

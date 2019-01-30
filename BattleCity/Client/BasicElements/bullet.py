@@ -133,6 +133,7 @@ class Bullet(QGraphicsPixmapItem):
                     elif oType == Block:
                         # handle different types of blocks
                         if obj.type == BlockType.brick:
+                            obj.isHidden = True
                             self.scene().removeItem(obj)
                             # remove the bullet
                             self.scene().removeItem(self)
@@ -143,6 +144,7 @@ class Bullet(QGraphicsPixmapItem):
                             # only player level 4 can destroy steel
                             if type(self.owner).__name__ == "Player":
                                 if self.owner.level == 4:
+                                    obj.isHidden = True
                                     self.scene().removeItem(obj)
                             # remove the bullet
                             self.scene().removeItem(self)

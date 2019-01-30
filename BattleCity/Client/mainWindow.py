@@ -39,10 +39,7 @@ class MainWindow(QMainWindow):
 
     def gamePickHandler(self, gameTypeData: GameTypeData):
         self.gameStartSound.play()
-        self.centralWidget().clearFocus()
         self.board = Board(self, self.config, self.currentMap, self.bridge, gameTypeData.isOnline, gameTypeData.numOfPlayers)
-        self.board.setFocusPolicy(Qt.StrongFocus)
-        self.board.setFocus()
         self.changeView(self.board)
 
     def localGameStageEndHandler(self, localGameStageEndData: LocalGameData):
@@ -55,6 +52,9 @@ class MainWindow(QMainWindow):
         pass
 
     def changeView(self, view):
+        self.centralWidget().clearFocus()
+        view.setFocusPolicy(Qt.StrongFocus)
+        view.setFocus()
         self.setCentralWidget(view)
 
     def center(self):

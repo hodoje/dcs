@@ -64,7 +64,7 @@ class DeusEx(QGraphicsObject):
         if self.type is DeusExTypes.POSITIVE:
             self.preActivateTimer.start(7000)
         else:
-            self.preActivateTimer.start(7000)
+            self.preActivateTimer.start(3500)
         # activate timer
         self.activateTimer = QTimer()
         self.activateTimer.setTimerType(Qt.PreciseTimer)
