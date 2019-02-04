@@ -17,9 +17,17 @@ class HudPlayerLives(QGraphicsItem):
         self.firstDigit = None
         self.secondDigit = None
         self.extractDigits(self.lives)
-        self.firstNumber = HudNumber(self, self.firstDigit, self.config)
+        self.firstNumber = HudNumber(self,
+                                     self.config.numberColors["black"],
+                                     self.config.numberSize["small"],
+                                     self.firstDigit,
+                                     self.config)
         self.firstNumber.setPos(self.x() + self.texture.width() // 3, self.y() + self.texture.height() // 2)
-        self.secondNumber = HudNumber(self, self.secondDigit, self.config)
+        self.secondNumber = HudNumber(self,
+                                      self.config.numberColors["black"],
+                                      self.config.numberSize["small"],
+                                      self.secondDigit,
+                                      self.config)
         self.secondNumber.setPos(self.x() + 2 * self.texture.width() // 3, self.y() + self.texture.height() // 2)
 
     def boundingRect(self):
@@ -41,4 +49,3 @@ class HudPlayerLives(QGraphicsItem):
         self.extractDigits(lives)
         self.firstNumber.updateNumber(self.firstDigit)
         self.secondNumber.updateNumber(self.secondDigit)
-        self.update()

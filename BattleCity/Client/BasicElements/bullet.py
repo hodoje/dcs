@@ -1,3 +1,4 @@
+from PyQt5 import sip
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 
@@ -6,8 +7,6 @@ from BasicElements.directionEnum import Direction
 from Block.block import Block
 from Block.blockTypeEnum import BlockType
 from Emitters.killEmitData import KillEmitData
-
-import sip
 
 
 class Bullet(QGraphicsPixmapItem):

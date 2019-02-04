@@ -33,7 +33,8 @@ class FiringNotifier(QObject):
         self.keys.append(key)
 
     def remove_key(self, key):
-        self.keys.remove(key)
+        if key in self.keys:
+            self.keys.remove(key)
 
     def emit(self):
         if self.canEmit:

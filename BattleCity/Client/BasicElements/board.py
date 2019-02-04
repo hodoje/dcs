@@ -1,12 +1,11 @@
-from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF, QUrl
+from PyQt5 import sip
+from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 
 import random
-import sip
 
-from BasicElements.directionEnum import Direction
 from Block.base import Base
 from BasicElements.enemy import Enemy
 from BasicElements.gameOver import GameOver
@@ -25,21 +24,22 @@ from HUD.hudEnemyContainer import HudEnemyContainer
 from HUD.hudPlayerLives import HudPlayerLives
 from Notifiers.firingNotifier import FiringNotifier
 from Notifiers.movementNotifier import MovementNotifier
-from Player.playerDetails import PlayerDetails
 from Player.playerWrapper import PlayerWrapper
 from DeusEx.deusex import DeusEx
 from DeusEx.deusexTypes import DeusExTypes
 
 
 class Board(QGraphicsView):
-    def __init__(self, parent, config, currentMap, bridge, isOnline, numOfPlayers):
+    def __init__(self, parent, config, currentMap, currentStage, bridge, gameTypeData, playerData):
         QGraphicsView.__init__(self, parent)
-
         self.config = config
         self.currentMap = currentMap
+        self.currentStage = currentStage
         self.bridge = bridge
-        self.isOnline = isOnline
-        self.numOfPlayers = numOfPlayers
+        self.gameTypeData = gameTypeData
+        self.isOnline = gameTypeData.isOnline
+        self.numOfPlayers = gameTypeData.numOfPlayers
+        self.playerData = playerData
         # set up player and enemy details
         # incremented when generating players (used on local)
         self.playersAlive = 0
@@ -208,21 +208,28 @@ class Board(QGraphicsView):
         self.generateMap()
         # HUD
         # stage hud
-        self.currentStage = HudCurrentStage(self.config, self.currentMap)
-        self.currentStage.setX(self.field.x() + self.field.boundingRect().width() + 20)
-        self.currentStage.setY(self.field.y() + self.field.boundingRect().height() - 100)
-        self.scene.addItem(self.currentStage)
+        self.hudCurrentStage = HudCurrentStage(self.config, self.currentStage)
+        self.hudCurrentStage.setX(self.field.x() + self.field.boundingRect().width() + 20)
+        self.hudCurrentStage.setY(self.field.y() + self.field.boundingRect().height() - 100)
+        self.scene.addItem(self.hudCurrentStage)
         # player lives hud
-        self.playersLives = {}
+        self.hudPlayersLives = {}
         if self.isOnline:
             pass
         else:
             for i in range(self.numOfPlayers):
-                playerLives = HudPlayerLives(i, self.config, self.config.initialPlayerLives)
-                playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
-                playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
-                self.scene.addItem(playerLives)
-                self.playersLives[i] = playerLives
+                if i == 0:
+                    playerLives = HudPlayerLives(i, self.config, self.playerData.firstPlayerDetails.lives)
+                    playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
+                    playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
+                    self.scene.addItem(playerLives)
+                    self.hudPlayersLives[self.playerData.firstPlayerDetails.id] = playerLives
+                elif i == 1:
+                    playerLives = HudPlayerLives(i, self.config, self.playerData.secondPlayerDetails.lives)
+                    playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
+                    playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
+                    self.scene.addItem(playerLives)
+                    self.hudPlayersLives[self.playerData.secondPlayerDetails.id] = playerLives
         # enemies left hud
         self.enemyHud = HudEnemyContainer(self.config)
         self.enemyHud.setX(self.field.x() + self.field.boundingRect().width() + 20)
@@ -278,7 +285,7 @@ class Board(QGraphicsView):
                     movementNotifier.movementSignal.connect(self.updatePosition)
                     firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = PlayerDetails(i, 0, None, None)
+                    playerDetails = self.playerData.firstPlayerDetails
                     playerWrapper = PlayerWrapper(playerDetails,
                                                   self.config,
                                                   self.playerColors[i],
@@ -299,7 +306,7 @@ class Board(QGraphicsView):
                         self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
                         self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                     playerWrapper.player.startingPos = startingPos
-                    self.playerWrappers[i] = playerWrapper
+                    self.playerWrappers[playerDetails.id] = playerWrapper
                     self.scene.addItem(playerWrapper.player)
                     self.playersAlive += 1
                     playerWrapper.player.setPos(startingPos)
@@ -310,7 +317,7 @@ class Board(QGraphicsView):
                     movementNotifier.movementSignal.connect(self.updatePosition)
                     firingNotifier = FiringNotifier(50)
                     firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = PlayerDetails(i, 0, None, None)
+                    playerDetails = self.playerData.secondPlayerDetails
                     playerWrapper = PlayerWrapper(playerDetails,
                                                   self.config,
                                                   self.playerColors[i],
@@ -331,7 +338,7 @@ class Board(QGraphicsView):
                         self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
                         self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                     playerWrapper.player.startingPos = startingPos
-                    self.playerWrappers[i] = playerWrapper
+                    self.playerWrappers[playerDetails.id] = playerWrapper
                     self.scene.addItem(playerWrapper.player)
                     self.playersAlive += 1
                     playerWrapper.player.setPos(startingPos)
@@ -439,6 +446,7 @@ class Board(QGraphicsView):
             enemy = self.enemies[killEmitterData.targetId]
             playerWrapper = self.playerWrappers[killEmitterData.shooterId]
             playerWrapper.player.points += enemy.tankDetails.points
+            playerWrapper.separateTankDetails.details[enemy.tankDetails.stringTankType]["count"] += 1
             # if the enemy is flashing then give the players a positive DeusEx
             if enemy.isFlashing:
                 self.deusExSpawner.spawn(isPositive=True)
@@ -450,12 +458,15 @@ class Board(QGraphicsView):
 
             self.enemiesCurrentlyAlive -= 1
             self.enemyExplosionSound.play()
+            # if there are no more enemy tank details that means that the stage is over
+            if not self.enemiesEtds:
+                self.stageEndInitiate()
         elif killEmitterData.targetType is Player:
             player = self.playerWrappers[killEmitterData.targetId].player
             player.resetPlayer()
             # if lives are less than 0, that means the player is dead
             if player.lives >= 0:
-                self.playersLives[player.id].updateLives(player.lives)
+                self.hudPlayersLives[player.id].updateLives(player.lives)
             self.playerExplosionSound.play()
 
     def playerDeadEmitterHandler(self, playerId):
@@ -478,10 +489,52 @@ class Board(QGraphicsView):
         if self.playersAlive == 0:
             self.gameOverHandler()
 
+    def stageEndInitiate(self):
+        self.stageEndTimer = QTimer()
+        self.stageEndTimer.setTimerType(Qt.PreciseTimer)
+        self.stageEndTimer.setInterval(3000)
+        self.stageEndTimer.timeout.connect(self.stageEnd)
+        self.stageEndTimer.start()
+
+    def stageEnd(self):
+        self.stageEndTimer.stop()
+        self.deusExSpawner.spawnTimer.stop()
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            # check if player is dead, if not, disconnect from all notifiers
+            # if he's dead, he already disconnected, and is removed from the scene
+            if playerWrapper.player is not None:
+                playerWrapper.firingNotifier.thread.terminate()
+                playerWrapper.movementNotifier.thread.terminate()
+                playerWrapper.firingNotifier.firingSignal.disconnect()
+                playerWrapper.movementNotifier.movementSignal.disconnect()
+                self.scene.removeItem(playerWrapper.player)
+        # clear up the map and disable all timers until next stage
+        self.scene.clear()
+        self.animationTimer.stop()
+        self.bulletTimer.stop()
+        for timer in self.enemyMovementTimers.values():
+            timer.stop()
+        self.enemySpawnTimer.stop()
+        self.enemyShootingTimer.stop()
+        if self.isOnline:
+            data = OnlineGameData(self.playerWrappers[self.playerData.playerDetails.id].getPlayerDetails())
+            self.bridge.onlineGameStageEndSignal.emit(data)
+        else:
+            if self.numOfPlayers == 1:
+                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails)
+                self.bridge.localGameStageEndSignal.emit(data)
+            else:
+                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails,
+                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
+                self.bridge.localGameStageEndSignal.emit(data)
+
     def gameOverHandler(self):
         if self.base.isAlive:
             self.base.destroyBase()
-            # endGameData = BoardToMainWindowData(self.isOnline)
             self.deusExSpawner.spawnTimer.stop()
             playerWrapper: PlayerWrapper
             for playerWrapper in self.playerWrappers.values():
@@ -496,20 +549,42 @@ class Board(QGraphicsView):
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER
             self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
+            self.gameOverAnimation.finished.connect(self.gameOverHandlerSendData)
             # disconnect from game over signal so there won't be more animations
             self.gameOverEmitter.gameOverSignal.disconnect()
-            if self.isOnline:
-                self.bridge.onlineGameStageEndSignal.emit(OnlineGameData(self.isOnline))
+
+    def gameOverHandlerSendData(self):
+        self.scene.clear()
+        self.animationTimer.stop()
+        self.bulletTimer.stop()
+        for timer in self.enemyMovementTimers.values():
+            timer.stop()
+        self.enemySpawnTimer.stop()
+        self.enemyShootingTimer.stop()
+        if self.isOnline:
+            #self.bridge.onlineGameOverSignal.emit(OnlineGameData())
+            pass
+        else:
+            if self.numOfPlayers == 1:
+                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails)
+                self.bridge.localGameOverSignal.emit(data)
             else:
-                self.bridge.localGameStageEndSignal.emit(LocalGameData())
+                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails,
+                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
+                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
+                self.bridge.localGameOverSignal.emit(data)
 
     def deusExActivate(self, deusExSignalData):
+        deusExChoice = None
+        if deusExSignalData.deusExType is DeusExTypes.POSITIVE:
+            deusExChoice = random.choice(self.positiveDeusExActivities)
+        else:
+            deusExChoice = random.choice(self.negativeDeusExActivities)
         for player in deusExSignalData.markedPlayers:
             pw = self.playerWrappers[player.id]
-            if deusExSignalData.deusExType is DeusExTypes.POSITIVE:
-                random.choice(self.positiveDeusExActivities)(pw)
-            else:
-                random.choice(self.negativeDeusExActivities)(pw)
+            deusExChoice(pw)
         self.deusExSpawner.spawnTimer.start()
 
     # DEUS EX ACTIVITIES
@@ -525,6 +600,9 @@ class Board(QGraphicsView):
             self.enemies.clear()
             self.enemiesCurrentlyAlive = 0
             self.enemyExplosionSound.play()
+        # if there are no more enemy tank details that means that the stage is over
+        if not self.enemiesEtds:
+            self.stageEndInitiate()
 
     def playerShield(self, pw=None):
         pw.player.isShielded = True
@@ -619,11 +697,11 @@ class Board(QGraphicsView):
                         pw.player.setY(y1)
                     else:
                         pw.player.setX(x1)
-                    break
+                    continue
 
     def playerLifeUp(self, pw=None):
         pw.player.lives += 1
-        self.playersLives[pw.player.id].updateLives(pw.player.lives)
+        self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
 
     def stopTheTime(self, pw=None):
         self.enemyShootingTimer.stop()
@@ -698,14 +776,18 @@ class Board(QGraphicsView):
                         pw.player.setY(y1)
                     else:
                         pw.player.setX(x1)
-                    break
+                    continue
 
     def playerLifeDown(self, pw=None):
         pw.player.lives -= 1
-        self.playersLives[pw.player.id].updateLives(pw.player.lives)
+        if pw.player.lives < 0:
+            pw.player.lives = 0
+        self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
 
     def playerLosePoints(self, pw=None):
-        pw.player.points -= 2000
+        pw.player.points -= 1000
+        if pw.player.points < 0:
+            pw.player.points = 0
 
     def playerCantMove(self, pw: PlayerWrapper):
         pw.firingNotifier.emitTimer.stop()
@@ -744,3 +826,20 @@ class Board(QGraphicsView):
                 self.scene.addItem(baseBlock)
         self.removeBaseShieldTimer.stop()
         del self.removeBaseShieldTimer
+
+    def startNewStage(self, nextMap, nextStage, playerData):
+        self.currentMap = nextMap
+        self.currentStage = nextStage
+        self.playerData = playerData
+        self.__init_ui__()
+        self.animationTimer.start()
+        self.bulletTimer.start()
+        for timer in self.enemyMovementTimers.values():
+            timer.start()
+        self.enemySpawnTimer.start()
+        self.enemyShootingTimer.start()
+        self.generateEtd()
+        self.generatePlayers()
+        self.currentEnemyCnt = 0
+        del self.deusExSpawner
+        self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)

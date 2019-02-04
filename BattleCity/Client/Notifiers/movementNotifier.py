@@ -7,7 +7,6 @@ class MovementNotifier(QObject):
     def __init__(self, timerInterval):
         super().__init__()
 
-        self.key = None
         self.keys = []
         self.is_done = False
 
@@ -32,7 +31,8 @@ class MovementNotifier(QObject):
         self.keys.append(key)
 
     def remove_key(self, key):
-        self.keys.remove(key)
+        if key in self.keys:
+            self.keys.remove(key)
 
     def emit(self):
         keys = self.keys[:]

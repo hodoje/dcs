@@ -23,6 +23,7 @@ class EnemyTankDetailsFactory:
             for b in range(self.basicTanksNum):
                 etd = EnemyTankDetails(
                     self.enemyTypeIds[self.enemyTypes[EnemyType.BASIC]["typeIdKey"]],
+                    EnemyType.BASIC,
                     self.enemyTypes[EnemyType.BASIC]["points"],
                     self.enemyTypes[EnemyType.BASIC]["health"],
                     self.enemyTypes[EnemyType.BASIC]["movementSpeed"],
@@ -33,6 +34,7 @@ class EnemyTankDetailsFactory:
             for f in range(self.fastTanksNum):
                 etd = EnemyTankDetails(
                     self.enemyTypeIds[self.enemyTypes[EnemyType.FAST]["typeIdKey"]],
+                    EnemyType.FAST,
                     self.enemyTypes[EnemyType.FAST]["points"],
                     self.enemyTypes[EnemyType.FAST]["health"],
                     self.enemyTypes[EnemyType.FAST]["movementSpeed"],
@@ -43,6 +45,7 @@ class EnemyTankDetailsFactory:
             for p in range(self.powerTanksNum):
                 etd = EnemyTankDetails(
                     self.enemyTypeIds[self.enemyTypes[EnemyType.POWER]["typeIdKey"]],
+                    EnemyType.POWER,
                     self.enemyTypes[EnemyType.POWER]["points"],
                     self.enemyTypes[EnemyType.POWER]["health"],
                     self.enemyTypes[EnemyType.POWER]["movementSpeed"],
@@ -53,6 +56,7 @@ class EnemyTankDetailsFactory:
             for a in range(self.armorTanksNum):
                 etd = EnemyTankDetails(
                     self.enemyTypeIds[self.enemyTypes[EnemyType.ARMOR]["typeIdKey"]],
+                    EnemyType.ARMOR,
                     self.enemyTypes[EnemyType.ARMOR]["points"],
                     self.enemyTypes[EnemyType.ARMOR]["health"],
                     self.enemyTypes[EnemyType.ARMOR]["movementSpeed"],

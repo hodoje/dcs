@@ -4,20 +4,26 @@ from PyQt5.QtWidgets import QGraphicsItem
 
 
 class HudNumber(QGraphicsItem):
-    def __init__(self, parent, initialNumber, config):
+    def __init__(self, parent, color, size, initialNumber, config):
         super().__init__(parent=parent)
 
         self.number = initialNumber
+        self.color = color
+        self.size = size
         self.config = config
-        self.texture = QImage(self.config.numbers[f"number{self.number}"])
-        self.m_boundingRect = QRectF(0, 0, self.texture.width(), self.texture.height())
+        self.textures = []
+        for i in range(10):
+            self.textures.append(QImage(self.config.numbers[f"number{i}_{self.color}_{self.size}"]))
+        self.width = self.textures[0].width()
+        self.height = self.textures[0].height()
+        self.m_boundingRect = QRectF(0, 0, self.width, self.height)
 
     def boundingRect(self):
         return self.m_boundingRect
 
     def paint(self, QPainter, QStyleOptionGraphicsItem, widget=None):
-        QPainter.drawImage(0, 0, self.texture)
+        QPainter.drawImage(0, 0, self.textures[self.number])
 
     def updateNumber(self, number):
         self.number = number
-        self.texture = QImage(self.config.numbers[f"number{self.number}"])
+        self.update()

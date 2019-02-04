@@ -5,15 +5,13 @@ from PyQt5.QtWidgets import QGraphicsItem
 from HUD.hudNumber import HudNumber
 
 
-class HudCurrentStage(QGraphicsItem):
+class HudEndOfStageCurrentStageContainer(QGraphicsItem):
     def __init__(self, config, currentStage):
         super().__init__()
-
         self.config = config
         self.currentStage = currentStage
-        self.texture = QImage(self.config.currentStageTexture)
+        self.texture = QImage(self.config.endOfStageCurrentStageContainer)
         self.m_boundingRect = QRectF(0, 0, self.texture.width(), self.texture.height())
-        # handles only numbers from 0 to 99
         self.digits = []
         for i in range(2):
             self.digits.append(i)
@@ -21,11 +19,11 @@ class HudCurrentStage(QGraphicsItem):
         self.numbers = []
         for i in range(len(self.digits)):
             number = HudNumber(self,
-                               self.config.numberColors["black"],
-                               self.config.numberSize["small"],
+                               self.config.numberColors["white"],
+                               self.config.numberSize["big"],
                                self.digits[i],
                                self.config)
-            number.setPos(self.x() + i * number.width, self.y() + 2 * self.texture.height() // 3)
+            number.setPos(self.x() + i * number.width, self.y())
             self.numbers.append(number)
 
     def boundingRect(self):

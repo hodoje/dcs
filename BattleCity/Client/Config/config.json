@@ -5,21 +5,58 @@
 		"height": 570
 	},
 	"mainMenuTexture": "Resources/Images/UI/start_screen.png",
-	"mainMenuSelector": "Resources/Images/UI/menuSelector.png",
+	"mainMenuSelector": "Resources/Images/UI/menu_selector.png",
 	"gameOverTexture": "Resources/Images/UI/game_over.png",
+	"endOfStageOnePlayerTexture": "Resources/Images/UI/end_of_stage_one_player.png",
+	"endOfStageTwoPlayersTexture": "Resources/Images/UI/end_of_stage_two_players.png",
+	"endOfStageCurrentStageContainer": "Resources/Images/UI/end_stage_current_stage_container.png",
+	"endStageTanksPerPlayerCounterContainer": "Resources/Images/UI/end_stage_tanks_per_player_counter_container.png",
+	"endOfStageSeparateTankPointsContainer": "Resources/Images/UI/end_stage_separate_tank_points_container.png",
+	"endOfStageTotalPlayerPointsContainer": "Resources/Images/UI/end_stage_total_player_points_container.png",
+	"endOfStageTotalTanksContainer": "Resources/Images/UI/end_stage_total_tanks_container.png",
 	"currentStageTexture": "Resources/Images/UI/current_stage.png",
+	"numberColors":
+	{
+		"black": "black",
+		"white": "white"
+	},
+	"numberSize":
+	{
+		"small": "small",
+		"big": "big"
+	},
 	"numbers":
 	{
-		"number0": "Resources/Images/Numbers/number_zero.png",
-		"number1": "Resources/Images/Numbers/number_one.png",
-		"number2": "Resources/Images/Numbers/number_two.png",
-		"number3": "Resources/Images/Numbers/number_three.png",
-		"number4": "Resources/Images/Numbers/number_four.png",
-		"number5": "Resources/Images/Numbers/number_five.png",
-		"number6": "Resources/Images/Numbers/number_six.png",
-		"number7": "Resources/Images/Numbers/number_seven.png",
-		"number8": "Resources/Images/Numbers/number_eight.png",
-		"number9": "Resources/Images/Numbers/number_nine.png"
+		"number0_black_small": "Resources/Images/Numbers/number_zero_black_small.png",
+		"number1_black_small": "Resources/Images/Numbers/number_one_black_small.png",
+		"number2_black_small": "Resources/Images/Numbers/number_two_black_small.png",
+		"number3_black_small": "Resources/Images/Numbers/number_three_black_small.png",
+		"number4_black_small": "Resources/Images/Numbers/number_four_black_small.png",
+		"number5_black_small": "Resources/Images/Numbers/number_five_black_small.png",
+		"number6_black_small": "Resources/Images/Numbers/number_six_black_small.png",
+		"number7_black_small": "Resources/Images/Numbers/number_seven_black_small.png",
+		"number8_black_small": "Resources/Images/Numbers/number_eight_black_small.png",
+		"number9_black_small": "Resources/Images/Numbers/number_nine_black_small.png",
+		"number0_white_small": "Resources/Images/Numbers/number_zero_white_small.png",
+		"number1_white_small": "Resources/Images/Numbers/number_one_white_small.png",
+		"number2_white_small": "Resources/Images/Numbers/number_two_white_small.png",
+		"number3_white_small": "Resources/Images/Numbers/number_three_white_small.png",
+		"number4_white_small": "Resources/Images/Numbers/number_four_white_small.png",
+		"number5_white_small": "Resources/Images/Numbers/number_five_white_small.png",
+		"number6_white_small": "Resources/Images/Numbers/number_six_white_small.png",
+		"number7_white_small": "Resources/Images/Numbers/number_seven_white_small.png",
+		"number8_white_small": "Resources/Images/Numbers/number_eight_white_small.png",
+		"number9_white_small": "Resources/Images/Numbers/number_nine_white_small.png",
+		"number0_white_big": "Resources/Images/Numbers/number_zero_white_big.png",
+		"number1_white_big": "Resources/Images/Numbers/number_one_white_big.png",
+		"number2_white_big": "Resources/Images/Numbers/number_two_white_big.png",
+		"number3_white_big": "Resources/Images/Numbers/number_three_white_big.png",
+		"number4_white_big": "Resources/Images/Numbers/number_four_white_big.png",
+		"number5_white_big": "Resources/Images/Numbers/number_five_white_big.png",
+		"number6_white_big": "Resources/Images/Numbers/number_six_white_big.png",
+		"number7_white_big": "Resources/Images/Numbers/number_seven_white_big.png",
+		"number8_white_big": "Resources/Images/Numbers/number_eight_white_big.png",
+		"number9_white_big": "Resources/Images/Numbers/number_nine_white_big.png"
 	},
 	"playersLives":
 	{

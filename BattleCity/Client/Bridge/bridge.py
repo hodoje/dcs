@@ -13,6 +13,9 @@ class Bridge(QObject):
     localGameStageEndSignal = pyqtSignal(LocalGameData)
     # board to main window signal (used for sending details about the player after online round)
     onlineGameStageEndSignal = pyqtSignal(OnlineGameData)
+    # game over signal sends the same data but needed for different slots
+    localGameOverSignal = pyqtSignal(LocalGameData)
+    onlineGameOverSignal = pyqtSignal(OnlineGameData)
 
     def __init__(self):
         super().__init__()

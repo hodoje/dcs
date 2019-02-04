@@ -1,6 +1,5 @@
 from PyQt5.QtCore import Qt, QRectF, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainterPath, QPen, QBrush, QRadialGradient, QColor
-from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import QGraphicsObject
 
 from DeusEx.deusExSignalData import DeusExSignalData
@@ -10,7 +9,7 @@ from DeusEx.deusexTypes import DeusExTypes
 class DeusEx(QGraphicsObject):
     deusExActivateSignal = pyqtSignal(DeusExSignalData)
 
-    def __init__(self, config, type):
+    def __init__(self, config, type, pulseSound, endingSound):
         super().__init__()
         self.type = type
         self.config = config
@@ -43,15 +42,8 @@ class DeusEx(QGraphicsObject):
             self.rg.setColorAt(0.0, firstClr)
             self.rg.setColorAt(1.0, secondClr)
         # pulsing sound
-        if self.type is DeusExTypes.POSITIVE:
-            self.pulseSound = QSound(self.config.sounds["nondangerZone"])
-        else:
-            self.pulseSound = QSound(self.config.sounds["dangerZone"])
-        # activate
-        if self.type is DeusExTypes.POSITIVE:
-            self.endingSound = QSound(self.config.sounds["nondangerZoneEnd"])
-        else:
-            self.endingSound = QSound(self.config.sounds["dangerZoneEnd"])
+        self.pulseSound = pulseSound
+        self.endingSound = endingSound
         # pulsing timer
         self.pulseTimer = QTimer()
         self.pulseTimer.setTimerType(Qt.PreciseTimer)
@@ -62,9 +54,9 @@ class DeusEx(QGraphicsObject):
         self.preActivateTimer.setTimerType(Qt.PreciseTimer)
         self.preActivateTimer.timeout.connect(self.preActivate)
         if self.type is DeusExTypes.POSITIVE:
-            self.preActivateTimer.start(7000)
+            self.preActivateTimer.start(10000)
         else:
-            self.preActivateTimer.start(3500)
+            self.preActivateTimer.start(3000)
         # activate timer
         self.activateTimer = QTimer()
         self.activateTimer.setTimerType(Qt.PreciseTimer)

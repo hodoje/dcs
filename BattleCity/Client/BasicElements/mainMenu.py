@@ -13,7 +13,7 @@ class MainMenu(QGraphicsView):
         super().__init__()
         self.config = config
         self.bridge = bridge
-        self.mainMenuTexture = self.config.mainMenuTexture
+        self.texture = self.config.mainMenuTexture
         # 1 - local 1 player, 2 - local 2 players, 3 - online
         self.options = [0, 1, 2]
         # initially the first option is selected
@@ -44,7 +44,7 @@ class MainMenu(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
 
         # set the background
-        backgroundPixmap = QPixmap(self.mainMenuTexture)
+        backgroundPixmap = QPixmap(self.texture)
         background = QGraphicsPixmapItem(backgroundPixmap)
         self.scene.addItem(background)
 

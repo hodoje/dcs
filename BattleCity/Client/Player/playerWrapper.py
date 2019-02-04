@@ -1,10 +1,11 @@
 from BasicElements.player import Player
 from Player.playerDetails import PlayerDetails
+from Player.separateTankPoints import SeparateTankDetails
 
 
 class PlayerWrapper:
     def __init__(self,
-                 playerDetails: PlayerDetails,
+                 playerDetails,
                  config,
                  color,
                  firingKey,
@@ -26,6 +27,7 @@ class PlayerWrapper:
         self.movementKeys = movementKeys
         self.firingNotifier = firingNotifier
         self.movementNotifier = movementNotifier
+        self.separateTankDetails = SeparateTankDetails()
         self.player = Player(self.playerDetails,
                              self.config,
                              self.color,
