@@ -46,3 +46,8 @@ class HudEndOfStageSeparateTankPointsContainer(QGraphicsItem):
     def updateTankDetails(self, tankDetails):
         self.currentPoints = 0
         self.pointsStep = tankDetails["pointsStep"]
+
+    def reset(self):
+        self.currentPoints = 0
+        self.pointsStep = 0
+        self.updatePlayerPoints()

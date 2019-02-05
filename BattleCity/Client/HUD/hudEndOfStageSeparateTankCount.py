@@ -49,3 +49,8 @@ class HudEndOfStageSeparateTankCount(QGraphicsItem):
     def updateCount(self, count):
         self.currentCount = 0
         self.count = count
+
+    def reset(self):
+        self.currentCount = 0
+        self.count = 0
+        self.updateCurrentCount()

@@ -410,3 +410,27 @@ class EndOfStageTwoPlayers(QGraphicsView):
         self.secondPlayerArmorTankSeparatePoints.hide()
         self.secondPlayerArmorTankSeparateCount.hide()
         self.hudSecondPlayerTotalTanksPerPlayer.hide()
+
+    def resetFirstPlayerStats(self):
+        self.hudFirstPlayerTotalPoints.reset()
+        self.firstPlayerBasicTankSeparatePoints.reset()
+        self.firstPlayerBasicTankSeparateCount.reset()
+        self.firstPlayerFastTankSeparatePoints.reset()
+        self.firstPlayerFastTankSeparateCount.reset()
+        self.firstPlayerPowerTankSeparatePoints.reset()
+        self.firstPlayerPowerTankSeparateCount.reset()
+        self.firstPlayerArmorTankSeparatePoints.reset()
+        self.firstPlayerArmorTankSeparateCount.reset()
+        self.hudFirstPlayerTotalTanksPerPlayer.reset()
+
+    def resetSecondPlayerStats(self):
+        self.hudSecondPlayerTotalPoints.reset()
+        self.secondPlayerBasicTankSeparatePoints.reset()
+        self.secondPlayerBasicTankSeparateCount.reset()
+        self.secondPlayerFastTankSeparatePoints.reset()
+        self.secondPlayerFastTankSeparateCount.reset()
+        self.secondPlayerPowerTankSeparatePoints.reset()
+        self.secondPlayerPowerTankSeparateCount.reset()
+        self.secondPlayerArmorTankSeparatePoints.reset()
+        self.secondPlayerArmorTankSeparateCount.reset()
+        self.hudSecondPlayerTotalTanksPerPlayer.reset()

@@ -41,6 +41,7 @@ class Player(QGraphicsObject):
             self.level = 1
         else:
             self.level = playerDetails.level
+        self.isAlive = playerDetails.isAlive
         self.config = config
         self.color = color
         self.isShielded = False

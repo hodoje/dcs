@@ -22,4 +22,3 @@ class SeparateTankDetails:
     def resetStats(self):
         for details in self.details.values():
             details["count"] = 0
-            details["points"] = 0

@@ -8,7 +8,6 @@ from HUD.hudNumber import HudNumber
 class HudEndOfStageTotalPlayerPointsContainer(QGraphicsItem):
     def __init__(self, config, totalPlayerPoints):
         super().__init__()
-
         self.config = config
         self.totalPlayerPoints = totalPlayerPoints
         self.texture = QImage(self.config.endOfStageTotalPlayerPointsContainer)
@@ -38,9 +37,13 @@ class HudEndOfStageTotalPlayerPointsContainer(QGraphicsItem):
         for idx, string_digit in enumerate(number_string):
             self.digits[idx] = int(string_digit)
 
-    def updateTotalPlayerPoints(self, playerPoints):
+    def updateTotalPlayerPoints(self, playerPoints=None):
         if playerPoints is not None:
             self.totalPlayerPoints = playerPoints
         self.extractDigitsFromPlayerPoints()
         for i in range(len(self.digits)):
             self.numbers[i].updateNumber(self.digits[i])
+
+    def reset(self):
+        self.totalPlayerPoints = 0
+        self.updateTotalPlayerPoints()

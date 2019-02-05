@@ -6,17 +6,8 @@ class MovementNotifier(QObject):
 
     def __init__(self, timerInterval):
         super().__init__()
-
         self.keys = []
-        self.is_done = False
 
-        # self.timerInterval = timerInterval
-        # self.timer = QTimer()
-        # self.timer.setTimerType(Qt.PreciseTimer)
-        # self.timer.timeout.connect(self.emit)
-        # self.timer.start(self.timerInterval)
-
-        # code for using threads
         self.thread = QThread()
         self.timerInterval = timerInterval
         self.emitTimer = QTimer()

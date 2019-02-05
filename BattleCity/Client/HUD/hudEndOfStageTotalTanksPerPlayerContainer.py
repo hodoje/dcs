@@ -8,7 +8,6 @@ from HUD.hudNumber import HudNumber
 class HudEndOfStageTotalTanksPerPlayerContainer(QGraphicsItem):
     def __init__(self, config, totalTanksPerPlayer):
         super().__init__()
-
         self.config = config
         self.totalTanksPerPlayer = totalTanksPerPlayer
         self.texture = QImage(self.config.endOfStageTotalTanksContainer)
@@ -45,3 +44,7 @@ class HudEndOfStageTotalTanksPerPlayerContainer(QGraphicsItem):
         self.extractDigitsFromTotalTanksPerPlayer()
         for i in range(len(self.digits)):
             self.numbers[i].updateNumber(self.digits[i])
+
+    def reset(self):
+        self.totalTanksPerPlayer = 0
+        self.updateTotalTanksPerPlayer()

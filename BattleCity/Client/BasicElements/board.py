@@ -1,5 +1,5 @@
 from PyQt5 import sip
-from PyQt5.QtCore import Qt, QTimer, QAbstractAnimation, QPropertyAnimation, QPointF
+from PyQt5.QtCore import Qt, QTimer, QPointF
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
@@ -13,7 +13,6 @@ from BasicElements.player import Player
 from Block.block import Block
 from Block.blockTypeEnum import BlockType
 from Bridge.localGameData import LocalGameData
-from Bridge.onlineGameData import OnlineGameData
 from DeusEx.deusExSpawner import DeusExSpawner
 from Emitters.gameOverEmitter import GameOverEmitter
 from Emitters.killEmitter import KillEmitter
@@ -138,11 +137,12 @@ class Board(QGraphicsView):
         # game over animation
         # we need to keep the gameOverAnimation alive so it can animate
         self.gameOver = GameOver(self.config.gameOverTexture)
-        self.gameOverAnimation = QPropertyAnimation(self.gameOver, b"pos")
-        self.gameOverAnimation.setDuration(3000)
-        # for some reason the first position stays so i've put it under the view boundary
-        self.gameOverAnimation.setStartValue(QPointF(150, self.fieldBottom + 50))
-        self.gameOverAnimation.setEndValue(QPointF(150, 150))
+        self.gameOver.setPos(QPointF(150, self.fieldBottom + 50))
+        self.gameOverTimer = QTimer()
+        self.gameOverTimer.setTimerType(Qt.PreciseTimer)
+        self.gameOverTimer.setInterval(15)
+        self.gameOverTimer.timeout.connect(self.animateGameOver)
+        self.gameOverSound = QSound(self.config.sounds["gameOver"])
 
         # deus ex spawner and its possible locations
         self.deusExLocations = [
@@ -219,17 +219,19 @@ class Board(QGraphicsView):
         else:
             for i in range(self.numOfPlayers):
                 if i == 0:
-                    playerLives = HudPlayerLives(i, self.config, self.playerData.firstPlayerDetails.lives)
-                    playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
-                    playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
-                    self.scene.addItem(playerLives)
-                    self.hudPlayersLives[self.playerData.firstPlayerDetails.id] = playerLives
+                    if self.playerData.firstPlayerDetails.isAlive:
+                        playerLives = HudPlayerLives(i, self.config, self.playerData.firstPlayerDetails.lives)
+                        playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
+                        playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
+                        self.scene.addItem(playerLives)
+                        self.hudPlayersLives[self.playerData.firstPlayerDetails.id] = playerLives
                 elif i == 1:
-                    playerLives = HudPlayerLives(i, self.config, self.playerData.secondPlayerDetails.lives)
-                    playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
-                    playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
-                    self.scene.addItem(playerLives)
-                    self.hudPlayersLives[self.playerData.secondPlayerDetails.id] = playerLives
+                    if self.playerData.secondPlayerDetails.isAlive:
+                        playerLives = HudPlayerLives(i, self.config, self.playerData.secondPlayerDetails.lives)
+                        playerLives.setX(self.field.x() + self.field.boundingRect().width() + 20)
+                        playerLives.setY(self.field.y() + self.field.boundingRect().height() - 220 + i * 60)
+                        self.scene.addItem(playerLives)
+                        self.hudPlayersLives[self.playerData.secondPlayerDetails.id] = playerLives
         # enemies left hud
         self.enemyHud = HudEnemyContainer(self.config)
         self.enemyHud.setX(self.field.x() + self.field.boundingRect().width() + 20)
@@ -279,69 +281,71 @@ class Board(QGraphicsView):
         else:
             for i in range(self.numOfPlayers):
                 if i == 0:
-                    firingKey = Qt.Key_Space
-                    movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
-                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
-                    movementNotifier.movementSignal.connect(self.updatePosition)
-                    firingNotifier = FiringNotifier(50)
-                    firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = self.playerData.firstPlayerDetails
-                    playerWrapper = PlayerWrapper(playerDetails,
-                                                  self.config,
-                                                  self.playerColors[i],
-                                                  firingKey,
-                                                  movementKeys,
-                                                  firingNotifier,
-                                                  movementNotifier,
-                                                  self.playerLevels,
-                                                  self.field,
-                                                  self.killEmitter,
-                                                  self.bulletTimer,
-                                                  Enemy,
-                                                  self.animationTimer,
-                                                  self.playerDeadEmitter,
-                                                  self.gameOverEmitter)
-                    playerWrapper.player.canShootSignal.connect(self.allowFiring)
-                    startingPos = QPointF(
-                        self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
-                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
-                    playerWrapper.player.startingPos = startingPos
-                    self.playerWrappers[playerDetails.id] = playerWrapper
-                    self.scene.addItem(playerWrapper.player)
-                    self.playersAlive += 1
-                    playerWrapper.player.setPos(startingPos)
+                    if self.playerData.firstPlayerDetails.isAlive:
+                        firingKey = Qt.Key_Space
+                        movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
+                        movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
+                        movementNotifier.movementSignal.connect(self.updatePosition)
+                        firingNotifier = FiringNotifier(50)
+                        firingNotifier.firingSignal.connect(self.fireCanon)
+                        playerDetails = self.playerData.firstPlayerDetails
+                        playerWrapper = PlayerWrapper(playerDetails,
+                                                      self.config,
+                                                      self.playerColors[i],
+                                                      firingKey,
+                                                      movementKeys,
+                                                      firingNotifier,
+                                                      movementNotifier,
+                                                      self.playerLevels,
+                                                      self.field,
+                                                      self.killEmitter,
+                                                      self.bulletTimer,
+                                                      Enemy,
+                                                      self.animationTimer,
+                                                      self.playerDeadEmitter,
+                                                      self.gameOverEmitter)
+                        playerWrapper.player.canShootSignal.connect(self.allowFiring)
+                        startingPos = QPointF(
+                            self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
+                            self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                        playerWrapper.player.startingPos = startingPos
+                        self.playerWrappers[playerDetails.id] = playerWrapper
+                        self.scene.addItem(playerWrapper.player)
+                        self.playersAlive += 1
+                        playerWrapper.player.setPos(startingPos)
                 elif i == 1:
-                    firingKey = Qt.Key_J
-                    movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
-                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
-                    movementNotifier.movementSignal.connect(self.updatePosition)
-                    firingNotifier = FiringNotifier(50)
-                    firingNotifier.firingSignal.connect(self.fireCanon)
-                    playerDetails = self.playerData.secondPlayerDetails
-                    playerWrapper = PlayerWrapper(playerDetails,
-                                                  self.config,
-                                                  self.playerColors[i],
-                                                  firingKey,
-                                                  movementKeys,
-                                                  firingNotifier,
-                                                  movementNotifier,
-                                                  self.playerLevels,
-                                                  self.field,
-                                                  self.killEmitter,
-                                                  self.bulletTimer,
-                                                  Enemy,
-                                                  self.animationTimer,
-                                                  self.playerDeadEmitter,
-                                                  self.gameOverEmitter)
-                    playerWrapper.player.canShootSignal.connect(self.allowFiring)
-                    startingPos = QPointF(
-                        self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
-                        self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
-                    playerWrapper.player.startingPos = startingPos
-                    self.playerWrappers[playerDetails.id] = playerWrapper
-                    self.scene.addItem(playerWrapper.player)
-                    self.playersAlive += 1
-                    playerWrapper.player.setPos(startingPos)
+                    if self.playerData.secondPlayerDetails.isAlive:
+                        firingKey = Qt.Key_J
+                        movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
+                        movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
+                        movementNotifier.movementSignal.connect(self.updatePosition)
+                        firingNotifier = FiringNotifier(50)
+                        firingNotifier.firingSignal.connect(self.fireCanon)
+                        playerDetails = self.playerData.secondPlayerDetails
+                        playerWrapper = PlayerWrapper(playerDetails,
+                                                      self.config,
+                                                      self.playerColors[i],
+                                                      firingKey,
+                                                      movementKeys,
+                                                      firingNotifier,
+                                                      movementNotifier,
+                                                      self.playerLevels,
+                                                      self.field,
+                                                      self.killEmitter,
+                                                      self.bulletTimer,
+                                                      Enemy,
+                                                      self.animationTimer,
+                                                      self.playerDeadEmitter,
+                                                      self.gameOverEmitter)
+                        playerWrapper.player.canShootSignal.connect(self.allowFiring)
+                        startingPos = QPointF(
+                            self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
+                            self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
+                        playerWrapper.player.startingPos = startingPos
+                        self.playerWrappers[playerDetails.id] = playerWrapper
+                        self.scene.addItem(playerWrapper.player)
+                        self.playersAlive += 1
+                        playerWrapper.player.setPos(startingPos)
 
     def generateEtd(self):
         # generate enemy details
@@ -472,18 +476,16 @@ class Board(QGraphicsView):
     def playerDeadEmitterHandler(self, playerId):
         playerWrapper = self.playerWrappers[playerId]
         # stop all player notifiers
-        playerWrapper.firingNotifier.thread.terminate()
-        playerWrapper.movementNotifier.thread.terminate()
         playerWrapper.firingNotifier.firingSignal.disconnect()
         playerWrapper.movementNotifier.movementSignal.disconnect()
+        playerWrapper.firingNotifier.thread.terminate()
+        playerWrapper.movementNotifier.thread.terminate()
+        playerWrapper.player.isAlive = False
         # remove player from scene, but still keep it's data
         self.scene.removeItem(playerWrapper.player)
         # delete the reference to a player because in gameover handler
         # we will go over the rest of players and remove them from the scene
         # so now we set the player reference to None because of the check in gameover handler
-        sip.delete(playerWrapper.player)
-        playerWrapper.player = None
-
         # decrease the number of players alive, if now is 0, all players are dead and the game is over
         self.playersAlive -= 1
         if self.playersAlive == 0:
@@ -503,11 +505,11 @@ class Board(QGraphicsView):
         for playerWrapper in self.playerWrappers.values():
             # check if player is dead, if not, disconnect from all notifiers
             # if he's dead, he already disconnected, and is removed from the scene
-            if playerWrapper.player is not None:
-                playerWrapper.firingNotifier.thread.terminate()
-                playerWrapper.movementNotifier.thread.terminate()
+            if playerWrapper.player is not None and playerWrapper.player.isAlive:
                 playerWrapper.firingNotifier.firingSignal.disconnect()
                 playerWrapper.movementNotifier.movementSignal.disconnect()
+                playerWrapper.firingNotifier.thread.terminate()
+                playerWrapper.movementNotifier.thread.terminate()
                 self.scene.removeItem(playerWrapper.player)
         # clear up the map and disable all timers until next stage
         self.scene.clear()
@@ -518,8 +520,9 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         if self.isOnline:
-            data = OnlineGameData(self.playerWrappers[self.playerData.playerDetails.id].getPlayerDetails())
-            self.bridge.onlineGameStageEndSignal.emit(data)
+            # data = OnlineGameData(self.playerWrappers[self.playerData.playerDetails.id].getPlayerDetails())
+            # self.bridge.onlineGameStageEndSignal.emit(data)
+            pass
         else:
             if self.numOfPlayers == 1:
                 data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
@@ -540,7 +543,7 @@ class Board(QGraphicsView):
             for playerWrapper in self.playerWrappers.values():
                 # check if player is dead, if not, disconnect from all notifiers
                 # if he's dead, he already disconnected, and is removed from the scene
-                if playerWrapper.player is not None:
+                if playerWrapper.player is not None and playerWrapper.player.isAlive:
                     playerWrapper.firingNotifier.thread.terminate()
                     playerWrapper.movementNotifier.thread.terminate()
                     playerWrapper.firingNotifier.firingSignal.disconnect()
@@ -548,10 +551,18 @@ class Board(QGraphicsView):
                     self.scene.removeItem(playerWrapper.player)
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER
-            self.gameOverAnimation.start(QAbstractAnimation.DeleteWhenStopped)
-            self.gameOverAnimation.finished.connect(self.gameOverHandlerSendData)
+            #self.gameOverAnimation.start(QPropertyAnimation.KeepWhenStopped)
+            #print(self.gameOverAnimation.currentValue())
+            self.gameOverTimer.start()
+            self.gameOverSound.play()
             # disconnect from game over signal so there won't be more animations
             self.gameOverEmitter.gameOverSignal.disconnect()
+
+    def animateGameOver(self):
+        self.gameOver.setY(self.gameOver.y() - 2)
+        if int(self.gameOver.y()) == 150:
+            self.gameOverTimer.stop()
+            self.gameOverHandlerSendData()
 
     def gameOverHandlerSendData(self):
         self.scene.clear()
@@ -562,7 +573,6 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         if self.isOnline:
-            #self.bridge.onlineGameOverSignal.emit(OnlineGameData())
             pass
         else:
             if self.numOfPlayers == 1:
@@ -789,7 +799,7 @@ class Board(QGraphicsView):
         if pw.player.points < 0:
             pw.player.points = 0
 
-    def playerCantMove(self, pw: PlayerWrapper):
+    def playerCantMove(self, pw):
         pw.firingNotifier.emitTimer.stop()
         pw.movementNotifier.emitTimer.stop()
         playerCantMoveTimer = QTimer()
@@ -827,9 +837,12 @@ class Board(QGraphicsView):
         self.removeBaseShieldTimer.stop()
         del self.removeBaseShieldTimer
 
-    def startNewStage(self, nextMap, nextStage, playerData):
+    def startNewStage(self, nextMap, nextStage, gameTypeData, playerData):
         self.currentMap = nextMap
         self.currentStage = nextStage
+        self.gameTypeData = gameTypeData
+        self.isOnline = gameTypeData.isOnline
+        self.numOfPlayers = gameTypeData.numOfPlayers
         self.playerData = playerData
         self.__init_ui__()
         self.animationTimer.start()
@@ -838,6 +851,10 @@ class Board(QGraphicsView):
             timer.start()
         self.enemySpawnTimer.start()
         self.enemyShootingTimer.start()
+        del self.gameOver
+        self.gameOver = GameOver(self.config.gameOverTexture)
+        self.gameOver.setPos(QPointF(150, self.fieldBottom + 50))
+        self.gameOverEmitter.gameOverSignal.connect(self.gameOverHandler)
         self.generateEtd()
         self.generatePlayers()
         self.currentEnemyCnt = 0
