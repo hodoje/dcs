@@ -14,6 +14,34 @@
 	"endOfStageSeparateTankPointsContainer": "Resources/Images/UI/end_stage_separate_tank_points_container.png",
 	"endOfStageTotalPlayerPointsContainer": "Resources/Images/UI/end_stage_total_player_points_container.png",
 	"endOfStageTotalTanksContainer": "Resources/Images/UI/end_stage_total_tanks_container.png",
+	"hiscoreAnimation": [
+		"Resources/Images/UI/hiscore_white.png",
+		"Resources/Images/UI/hiscore_gray.png",
+		"Resources/Images/UI/hiscore_dark_gray.png",
+		"Resources/Images/UI/hiscore_blue.png",
+		"Resources/Images/UI/hiscore_dark_blue.png"
+	],
+	"winnerScreenPlayer1Animation": [
+		"Resources/Images/UI/winner_player_1_white.png",
+		"Resources/Images/UI/winner_player_1_gray.png",
+		"Resources/Images/UI/winner_player_1_dark_gray.png",
+		"Resources/Images/UI/winner_player_1_blue.png",
+		"Resources/Images/UI/winner_player_1_dark_blue.png"
+	],
+	"winnerScreenPlayer2Animation": [
+		"Resources/Images/UI/winner_player_2_white.png",
+		"Resources/Images/UI/winner_player_2_gray.png",
+		"Resources/Images/UI/winner_player_2_dark_gray.png",
+		"Resources/Images/UI/winner_player_2_blue.png",
+		"Resources/Images/UI/winner_player_2_dark_blue.png"
+	],
+	"winnerScreenTieAnimation": [
+		"Resources/Images/UI/winner_tie_white.png",
+		"Resources/Images/UI/winner_tie_gray.png",
+		"Resources/Images/UI/winner_tie_dark_gray.png",
+		"Resources/Images/UI/winner_tie_blue.png",
+		"Resources/Images/UI/winner_tie_dark_blue.png"
+	],
 	"currentStageTexture": "Resources/Images/UI/current_stage.png",
 	"numberColors":
 	{
@@ -57,6 +85,74 @@
 		"number7_white_big": "Resources/Images/Numbers/number_seven_white_big.png",
 		"number8_white_big": "Resources/Images/Numbers/number_eight_white_big.png",
 		"number9_white_big": "Resources/Images/Numbers/number_nine_white_big.png"
+	},
+	"hiscoreNumbers":
+	{
+		"white":
+		{
+			"number0": "Resources/Images/Numbers/hiscore_numbers/number_zero_huge_white.png",
+			"number1": "Resources/Images/Numbers/hiscore_numbers/number_one_huge_white.png",
+			"number2": "Resources/Images/Numbers/hiscore_numbers/number_two_huge_white.png",
+			"number3": "Resources/Images/Numbers/hiscore_numbers/number_three_huge_white.png",
+			"number4": "Resources/Images/Numbers/hiscore_numbers/number_four_huge_white.png",
+			"number5": "Resources/Images/Numbers/hiscore_numbers/number_five_huge_white.png",
+			"number6": "Resources/Images/Numbers/hiscore_numbers/number_six_huge_white.png",
+			"number7": "Resources/Images/Numbers/hiscore_numbers/number_seven_huge_white.png",
+			"number8": "Resources/Images/Numbers/hiscore_numbers/number_eight_huge_white.png",
+			"number9": "Resources/Images/Numbers/hiscore_numbers/number_nine_huge_white.png"
+		},
+		"gray":
+		{
+			"number0": "Resources/Images/Numbers/hiscore_numbers/number_zero_huge_gray.png",
+			"number1": "Resources/Images/Numbers/hiscore_numbers/number_one_huge_gray.png",
+			"number2": "Resources/Images/Numbers/hiscore_numbers/number_two_huge_gray.png",
+			"number3": "Resources/Images/Numbers/hiscore_numbers/number_three_huge_gray.png",
+			"number4": "Resources/Images/Numbers/hiscore_numbers/number_four_huge_gray.png",
+			"number5": "Resources/Images/Numbers/hiscore_numbers/number_five_huge_gray.png",
+			"number6": "Resources/Images/Numbers/hiscore_numbers/number_six_huge_gray.png",
+			"number7": "Resources/Images/Numbers/hiscore_numbers/number_seven_huge_gray.png",
+			"number8": "Resources/Images/Numbers/hiscore_numbers/number_eight_huge_gray.png",
+			"number9": "Resources/Images/Numbers/hiscore_numbers/number_nine_huge_gray.png"
+		},
+		"darkGray":
+		{
+			"number0": "Resources/Images/Numbers/hiscore_numbers/number_zero_huge_dark_gray.png",
+			"number1": "Resources/Images/Numbers/hiscore_numbers/number_one_huge_dark_gray.png",
+			"number2": "Resources/Images/Numbers/hiscore_numbers/number_two_huge_dark_gray.png",
+			"number3": "Resources/Images/Numbers/hiscore_numbers/number_three_huge_dark_gray.png",
+			"number4": "Resources/Images/Numbers/hiscore_numbers/number_four_huge_dark_gray.png",
+			"number5": "Resources/Images/Numbers/hiscore_numbers/number_five_huge_dark_gray.png",
+			"number6": "Resources/Images/Numbers/hiscore_numbers/number_six_huge_dark_gray.png",
+			"number7": "Resources/Images/Numbers/hiscore_numbers/number_seven_huge_dark_gray.png",
+			"number8": "Resources/Images/Numbers/hiscore_numbers/number_eight_huge_dark_gray.png",
+			"number9": "Resources/Images/Numbers/hiscore_numbers/number_nine_huge_dark_gray.png"
+		},
+		"blue":
+		{
+			"number0": "Resources/Images/Numbers/hiscore_numbers/number_zero_huge_blue.png",
+			"number1": "Resources/Images/Numbers/hiscore_numbers/number_one_huge_blue.png",
+			"number2": "Resources/Images/Numbers/hiscore_numbers/number_two_huge_blue.png",
+			"number3": "Resources/Images/Numbers/hiscore_numbers/number_three_huge_blue.png",
+			"number4": "Resources/Images/Numbers/hiscore_numbers/number_four_huge_blue.png",
+			"number5": "Resources/Images/Numbers/hiscore_numbers/number_five_huge_blue.png",
+			"number6": "Resources/Images/Numbers/hiscore_numbers/number_six_huge_blue.png",
+			"number7": "Resources/Images/Numbers/hiscore_numbers/number_seven_huge_blue.png",
+			"number8": "Resources/Images/Numbers/hiscore_numbers/number_eight_huge_blue.png",
+			"number9": "Resources/Images/Numbers/hiscore_numbers/number_nine_huge_blue.png"
+		},
+		"darkBlue":
+		{
+			"number0": "Resources/Images/Numbers/hiscore_numbers/number_zero_huge_dark_blue.png",
+			"number1": "Resources/Images/Numbers/hiscore_numbers/number_one_huge_dark_blue.png",
+			"number2": "Resources/Images/Numbers/hiscore_numbers/number_two_huge_dark_blue.png",
+			"number3": "Resources/Images/Numbers/hiscore_numbers/number_three_huge_dark_blue.png",
+			"number4": "Resources/Images/Numbers/hiscore_numbers/number_four_huge_dark_blue.png",
+			"number5": "Resources/Images/Numbers/hiscore_numbers/number_five_huge_dark_blue.png",
+			"number6": "Resources/Images/Numbers/hiscore_numbers/number_six_huge_dark_blue.png",
+			"number7": "Resources/Images/Numbers/hiscore_numbers/number_seven_huge_dark_blue.png",
+			"number8": "Resources/Images/Numbers/hiscore_numbers/number_eight_huge_dark_blue.png",
+			"number9": "Resources/Images/Numbers/hiscore_numbers/number_nine_huge_dark_blue.png"
+		}
 	},
 	"playersLives":
 	{

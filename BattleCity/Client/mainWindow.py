@@ -9,6 +9,7 @@ from BasicElements.board import Board
 from BasicElements.endOfStageOnePlayer import EndOfStageOnePlayer
 from BasicElements.endOfStageTwoPlayers import EndOfStageTwoPlayers
 from BasicElements.mainMenu import MainMenu
+from BasicElements.winnerScreen import WinnerScreen
 from Bridge.bridge import Bridge
 from Bridge.gameTypeData import GameTypeData
 from Bridge.localGameData import LocalGameData
@@ -42,6 +43,8 @@ class MainWindow(QMainWindow):
         self.currentGameData = None
         self.endOfStageOnePlayer = None
         self.endOfStageTwoPlayers = None
+        self.winnerScreen = WinnerScreen(self.config, 1, 0, 0, 0)
+        self.winnerScreen.winnerAnimationOverSignal.connect(self.goToMainMenu)
         self.gameStartSound = QSound(self.config.sounds["gameStart"])
         self.__init_ui__()
         self.show()
@@ -51,6 +54,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.central_widget.addWidget(self.mainMenu)
         self.central_widget.setCurrentWidget(self.mainMenu)
+        self.central_widget.addWidget(self.winnerScreen)
         self.setWindowTitle("Battle City")
         self.setFixedSize(self.config.mainWindowSize["width"], self.config.mainWindowSize["height"])
         self.center()
@@ -82,12 +86,17 @@ class MainWindow(QMainWindow):
             gameData.firstPlayerDetails.lives = 0
             gameData.firstPlayerDetails.level = 0
             gameData.firstPlayerSeparateTankDetails.resetStats()
-        if not gameData.secondPlayerDetails.isAlive:
-            self.endOfStageTwoPlayers.resetSecondPlayerStats()
-            gameData.secondPlayerDetails.points = 0
-            gameData.secondPlayerDetails.lives = 0
-            gameData.secondPlayerDetails.level = 0
-            gameData.secondPlayerSeparateTankDetails.resetStats()
+        if gameData.secondPlayerDetails is not None:
+            if not gameData.secondPlayerDetails.isAlive:
+                self.endOfStageTwoPlayers.resetSecondPlayerStats()
+                gameData.secondPlayerDetails.points = 0
+                gameData.secondPlayerDetails.lives = 0
+                gameData.secondPlayerDetails.level = 0
+                gameData.secondPlayerSeparateTankDetails.resetStats()
+
+    def newStage(self):
+        self.newStageTimer.stop()
+        self.startRound(self.currentGameData)
 
     def updateMapAndStage(self):
         if self.currentMap == self.numOfMaps:
@@ -142,10 +151,6 @@ class MainWindow(QMainWindow):
         self.newStageTimer.timeout.connect(self.newStage)
         self.newStageTimer.start()
 
-    def newStage(self):
-        self.newStageTimer.stop()
-        self.startRound(self.currentGameData)
-
     def localGameOverHandler(self, localGameData: LocalGameData):
         if self.currentGameTypeData.numOfPlayers == 1:
             if self.endOfStageOnePlayer is None:
@@ -160,6 +165,13 @@ class MainWindow(QMainWindow):
                                                            localGameData.firstPlayerSeparateTankDetails)
             self.central_widget.setCurrentWidget(self.endOfStageOnePlayer)
             self.endOfStageOnePlayer.animate()
+            winner = self.getTheWinner(localGameData)
+            self.winnerScreen.setWinner(winner,
+                                        self.currentGameTypeData.numOfPlayers,
+                                        localGameData.firstPlayerDetails.points,
+                                        None)
+            self.central_widget.setCurrentWidget(self.winnerScreen)
+            self.winnerScreen.animate()
         else:
             if self.endOfStageTwoPlayers is None:
                 self.endOfStageTwoPlayers = EndOfStageTwoPlayers(self.config,
@@ -177,14 +189,33 @@ class MainWindow(QMainWindow):
                                                             localGameData.secondPlayerSeparateTankDetails)
             self.central_widget.setCurrentWidget(self.endOfStageTwoPlayers)
             self.endOfStageTwoPlayers.animate()
-        self.mainMenuTimer = QTimer()
-        self.mainMenuTimer.setTimerType(Qt.PreciseTimer)
-        self.mainMenuTimer.setInterval(3000)
-        self.mainMenuTimer.timeout.connect(self.goToMainMenu)
-        self.mainMenuTimer.start()
+            winner = self.getTheWinner(localGameData)
+            self.winnerScreen.setWinner(winner,
+                                        self.currentGameTypeData.numOfPlayers,
+                                        localGameData.firstPlayerDetails.points,
+                                        localGameData.secondPlayerDetails.points)
+            self.central_widget.setCurrentWidget(self.winnerScreen)
+            self.winnerScreen.animate()
+
+
+    def getTheWinner(self, localGameData):
+        if self.currentGameTypeData.numOfPlayers == 1:
+            return 1
+        else:
+            if localGameData.firstPlayerDetails.isAlive and localGameData.secondPlayerDetails.isAlive:
+                if localGameData.firstPlayerDetails.points > localGameData.secondPlayerDetails.points:
+                    return 1
+                elif localGameData.firstPlayerDetails.points < localGameData.secondPlayerDetails.points:
+                    return 2
+                else:
+                    return 0
+            elif localGameData.firstPlayerDetails.isAlive:
+                return 1
+            elif localGameData.secondPlayerDetails.isAlive:
+                return 2
 
     def goToMainMenu(self):
-        self.mainMenuTimer.stop()
+        self.winnerScreen.resetItems()
         self.central_widget.setCurrentWidget(self.mainMenu)
 
     def onlineGameStageEndHandler(self, onlineGameStageEndData: OnlineGameData):

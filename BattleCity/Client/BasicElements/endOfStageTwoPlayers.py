@@ -341,6 +341,7 @@ class EndOfStageTwoPlayers(QGraphicsView):
         self.hudSecondPlayerTotalTanksPerPlayer.show()
 
     def animate(self):
+        QtTest.QTest.qWait(500)
         self.animateBasicTankStats()
         QtTest.QTest.qWait(500)
         self.animateFastTankStats()
@@ -369,7 +370,9 @@ class EndOfStageTwoPlayers(QGraphicsView):
         for detail in self.secondPlayerSeparateTankDetails.details.values():
             self.secondPlayerTotalTanksPerPlayer += detail["count"]
         self.hudCurrentStage.updateStage(self.currentStage)
+
         # FIRST PLAYER
+        self.resetFirstPlayerStats()
         self.hudFirstPlayerTotalPoints.updateTotalPlayerPoints(self.firstPlayerTotalPoints)
         self.firstPlayerBasicTankSeparatePoints.updateTankDetails(self.firstPlayerSeparateTankDetails.details["basic"])
         self.firstPlayerBasicTankSeparateCount.updateCount(self.firstPlayerSeparateTankDetails.details["basic"]["count"])
@@ -391,6 +394,7 @@ class EndOfStageTwoPlayers(QGraphicsView):
         self.hudFirstPlayerTotalTanksPerPlayer.hide()
 
         # SECOND PLAYER
+        self.resetSecondPlayerStats()
         self.hudSecondPlayerTotalPoints.updateTotalPlayerPoints(self.secondPlayerTotalPoints)
         self.secondPlayerBasicTankSeparatePoints.updateTankDetails(self.secondPlayerSeparateTankDetails.details["basic"])
         self.secondPlayerBasicTankSeparateCount.updateCount(self.secondPlayerSeparateTankDetails.details["basic"]["count"])

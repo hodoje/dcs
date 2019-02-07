@@ -137,6 +137,7 @@ class Board(QGraphicsView):
         # game over animation
         # we need to keep the gameOverAnimation alive so it can animate
         self.gameOver = GameOver(self.config.gameOverTexture)
+        self.gameOver.setZValue(3)
         self.gameOver.setPos(QPointF(150, self.fieldBottom + 50))
         self.gameOverTimer = QTimer()
         self.gameOverTimer.setTimerType(Qt.PreciseTimer)
@@ -354,6 +355,8 @@ class Board(QGraphicsView):
             self.config.enemyTypeIds,
             self.config.maps[f"map{self.currentMap}"]["enemies"],
             self.config.bulletSpeedMap)
+        if self.enemiesEtds:
+            self.enemiesEtds.clear()
         self.enemiesEtds = etdFactory.generateEnemiesDetails()
 
     def generateEnemy(self):
@@ -500,7 +503,6 @@ class Board(QGraphicsView):
 
     def stageEnd(self):
         self.stageEndTimer.stop()
-        self.deusExSpawner.spawnTimer.stop()
         playerWrapper: PlayerWrapper
         for playerWrapper in self.playerWrappers.values():
             # check if player is dead, if not, disconnect from all notifiers
@@ -519,6 +521,7 @@ class Board(QGraphicsView):
             timer.stop()
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
+        self.deusExSpawner.spawnTimer.stop()
         if self.isOnline:
             # data = OnlineGameData(self.playerWrappers[self.playerData.playerDetails.id].getPlayerDetails())
             # self.bridge.onlineGameStageEndSignal.emit(data)
@@ -534,25 +537,23 @@ class Board(QGraphicsView):
                                      self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
                                      self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
                 self.bridge.localGameStageEndSignal.emit(data)
+        self.playerWrappers.clear()
 
     def gameOverHandler(self):
         if self.base.isAlive:
             self.base.destroyBase()
-            self.deusExSpawner.spawnTimer.stop()
             playerWrapper: PlayerWrapper
             for playerWrapper in self.playerWrappers.values():
                 # check if player is dead, if not, disconnect from all notifiers
                 # if he's dead, he already disconnected, and is removed from the scene
                 if playerWrapper.player is not None and playerWrapper.player.isAlive:
-                    playerWrapper.firingNotifier.thread.terminate()
-                    playerWrapper.movementNotifier.thread.terminate()
                     playerWrapper.firingNotifier.firingSignal.disconnect()
                     playerWrapper.movementNotifier.movementSignal.disconnect()
+                    playerWrapper.firingNotifier.thread.terminate()
+                    playerWrapper.movementNotifier.thread.terminate()
                     self.scene.removeItem(playerWrapper.player)
             self.scene.addItem(self.gameOver)
             # ANIMATE GAME OVER
-            #self.gameOverAnimation.start(QPropertyAnimation.KeepWhenStopped)
-            #print(self.gameOverAnimation.currentValue())
             self.gameOverTimer.start()
             self.gameOverSound.play()
             # disconnect from game over signal so there won't be more animations
@@ -572,6 +573,7 @@ class Board(QGraphicsView):
             timer.stop()
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
+        self.deusExSpawner.spawnTimer.stop()
         if self.isOnline:
             pass
         else:
@@ -585,6 +587,7 @@ class Board(QGraphicsView):
                                      self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
                                      self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
                 self.bridge.localGameOverSignal.emit(data)
+        self.playerWrappers.clear()
 
     def deusExActivate(self, deusExSignalData):
         deusExChoice = None
@@ -602,8 +605,8 @@ class Board(QGraphicsView):
     def destroyCurrentlyAliveEnemies(self, pw=None):
         if self.enemies:
             for id, enemy in self.enemies.items():
-                del self.enemiesEtds[id]
                 self.scene.removeItem(enemy)
+                del self.enemiesEtds[id]
                 # although this looks like it would produce an error because of deleting elements from currently
                 # iterating collection, it won't because we're deleting the c++ object and not the python wrapper
                 sip.delete(enemy)
@@ -845,18 +848,19 @@ class Board(QGraphicsView):
         self.numOfPlayers = gameTypeData.numOfPlayers
         self.playerData = playerData
         self.__init_ui__()
+        self.generateEtd()
         self.animationTimer.start()
         self.bulletTimer.start()
         for timer in self.enemyMovementTimers.values():
             timer.start()
-        self.enemySpawnTimer.start()
         self.enemyShootingTimer.start()
+        self.enemySpawnTimer.start()
         del self.gameOver
         self.gameOver = GameOver(self.config.gameOverTexture)
         self.gameOver.setPos(QPointF(150, self.fieldBottom + 50))
         self.gameOverEmitter.gameOverSignal.connect(self.gameOverHandler)
-        self.generateEtd()
         self.generatePlayers()
         self.currentEnemyCnt = 0
+        self.enemiesCurrentlyAlive = 0
         del self.deusExSpawner
         self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)
