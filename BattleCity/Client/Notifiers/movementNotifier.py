@@ -1,3 +1,5 @@
+from openal import *
+
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QTimer, QThread
 
 

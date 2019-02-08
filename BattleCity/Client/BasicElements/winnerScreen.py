@@ -1,6 +1,7 @@
+from openal import *
+
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
@@ -28,7 +29,7 @@ class WinnerScreen(QGraphicsView):
         self.hiscoreAnimationCurrentItem = 0
         self.hudHiscorePlayerTotalPointsList = []
         self.hudHiscorePlayerTotalPointsCurrentItem = 0
-        self.amazingScoreSound = QSound(self.config.sounds["amazingScore"])
+        self.amazingScoreSound = oalOpen(self.config.sounds["amazingScore"])
         self.__init_ui()
 
     def __init_ui(self):
@@ -132,7 +133,7 @@ class WinnerScreen(QGraphicsView):
 
     def checkForAnimationEnd(self):
         if self.numOfPlayers == 1:
-            if not self.amazingScoreSound.isFinished():
+            if not self.amazingScoreSound.get_state() == AL_STOPPED:
                 self.hiscoreAnimationItems[self.hiscoreAnimationCurrentItem].hide()
                 self.hiscoreAnimationCurrentItem += 1
                 if self.hiscoreAnimationCurrentItem == len(self.hiscoreAnimationItems):
@@ -151,7 +152,7 @@ class WinnerScreen(QGraphicsView):
             self.hudFirstPlayerTotalPoints.show()
             self.hudSecondPlayerTotalPoints.show()
             if self.winnerPlayer == 1:
-                if not self.amazingScoreSound.isFinished():
+                if not self.amazingScoreSound.get_state() == AL_STOPPED:
                     self.player1AnimationItems[self.player1CurrentAnimationItem].hide()
                     self.player1CurrentAnimationItem += 1
                     if self.player1CurrentAnimationItem == len(self.player1AnimationItems):
@@ -161,7 +162,7 @@ class WinnerScreen(QGraphicsView):
                     self.animationTimer.stop()
                     self.winnerAnimationOverSignal.emit(1)
             elif self.winnerPlayer == 2:
-                if not self.amazingScoreSound.isFinished():
+                if not self.amazingScoreSound.get_state() == AL_STOPPED:
                     self.player2AnimationItems[self.player2CurrentAnimationItem].hide()
                     self.player2CurrentAnimationItem += 1
                     if self.player2CurrentAnimationItem == len(self.player2AnimationItems):
@@ -171,7 +172,7 @@ class WinnerScreen(QGraphicsView):
                     self.animationTimer.stop()
                     self.winnerAnimationOverSignal.emit(1)
             else:
-                if not self.amazingScoreSound.isFinished():
+                if not self.amazingScoreSound.get_state() == AL_STOPPED:
                     self.winnerScreenTieAnimationItems[self.winnerScreenTieCurrentAnimationItem].hide()
                     self.winnerScreenTieCurrentAnimationItem += 1
                     if self.winnerScreenTieCurrentAnimationItem == len(self.winnerScreenTieAnimationItems):

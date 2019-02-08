@@ -635,6 +635,8 @@
 		"menuSelect": "Resources/Sounds/menuSelectAndBulletHitWallOrBullet.wav",
 		"amazingScore": "Resources/Sounds/amazingScore.wav",
 		"tankCounter": "Resources/Sounds/tankCounter.wav",
+		"tankMoving": "Resources/Sounds/tankMoving.wav",
+		"tankNotMoving": "Resources/Sounds/tankNotMoving.wav",
 		"playerShot": "Resources/Sounds/playerShot.wav",
         "explosion": "Resources/Sounds/explosion.wav",
 		"playerExplosion": "Resources/Sounds/playerExplosion.wav",

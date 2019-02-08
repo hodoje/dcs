@@ -1,7 +1,8 @@
+from openal import *
+
 from PyQt5 import QtTest
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
@@ -23,7 +24,7 @@ class EndOfStageOnePlayer(QGraphicsView):
         for detail in self.separateTankDetails.details.values():
             self.totalTanksPerPlayer += detail["count"]
         self.texture = self.config.endOfStageOnePlayerTexture
-        self.tankCounterSound = QSound(self.config.sounds["tankCounter"])
+        self.tankCounterSound = oalOpen(self.config.sounds["tankCounter"])
         self.__init_ui()
 
     def __init_ui(self):

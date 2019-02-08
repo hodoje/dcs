@@ -1,6 +1,7 @@
+from openal import *
+
 from PyQt5.QtCore import Qt, QPointF, QUrl
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
@@ -20,8 +21,7 @@ class MainMenu(QGraphicsView):
         self.selectedOption = 0
         self.selectorPositions = [QPointF(180, 315), QPointF(180, 355), QPointF(180, 395)]
         self.__init_ui()
-        self.selectionSound = QSoundEffect(self)
-        self.selectionSound.setSource(QUrl.fromLocalFile(self.config.sounds["menuSelect"]))
+        self.selectionSound = oalOpen(self.config.sounds["menuSelect"])
 
     def __init_ui(self):
         # set up the scene

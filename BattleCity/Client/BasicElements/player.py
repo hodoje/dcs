@@ -1,3 +1,5 @@
+from openal import *
+
 from PyQt5.QtCore import QPoint, QRectF, pyqtSignal, QTimer, Qt
 from PyQt5.QtGui import QImage
 from PyQt5.QtMultimedia import QSound
@@ -73,7 +75,8 @@ class Player(QGraphicsObject):
         self.textureTimer.timeout.connect(self.updateUi)
 
         # sounds
-        self.shotSound = QSound(self.config.sounds["playerShot"])
+        #self.shotSound = QSound(self.config.sounds["playerShot"])
+        self.shotSound = oalOpen(self.config.sounds["playerShot"])
 
     def __init_ui__(self):
         # set up player textures, refresh rate and transformation origin point

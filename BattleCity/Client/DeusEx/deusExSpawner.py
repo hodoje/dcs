@@ -1,3 +1,5 @@
+from openal import *
+
 import random
 
 from PyQt5.QtCore import QTimer, Qt
@@ -15,10 +17,10 @@ class DeusExSpawner:
         self.action = action
         self.locations = locations
         self.deusExTypesList = [DeusExTypes.POSITIVE, DeusExTypes.NEGATIVE]
-        self.positivePulseSound = QSound(self.config.sounds["nondangerZone"])
-        self.negativePulseSound = QSound(self.config.sounds["dangerZone"])
-        self.positiveEndingSound = QSound(self.config.sounds["nondangerZoneEnd"])
-        self.negativeEndingSound = QSound(self.config.sounds["dangerZoneEnd"])
+        self.positivePulseSound = oalOpen(self.config.sounds["nondangerZone"])
+        self.negativePulseSound = oalOpen(self.config.sounds["dangerZone"])
+        self.positiveEndingSound = oalOpen(self.config.sounds["nondangerZoneEnd"])
+        self.negativeEndingSound = oalOpen(self.config.sounds["dangerZoneEnd"])
         self.spawnTimer = QTimer()
         self.spawnTimer.setTimerType(Qt.PreciseTimer)
         self.spawnTimer.timeout.connect(self.spawn)

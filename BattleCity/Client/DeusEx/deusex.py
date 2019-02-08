@@ -1,3 +1,5 @@
+from openal import *
+
 from PyQt5.QtCore import Qt, QRectF, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainterPath, QPen, QBrush, QRadialGradient, QColor
 from PyQt5.QtWidgets import QGraphicsObject
@@ -105,7 +107,7 @@ class DeusEx(QGraphicsObject):
         self.activateTimer.start()
 
     def endingSoundFinished(self):
-        if self.endingSound.isFinished():
+        if self.endingSound.get_state() == AL_STOPPED:
             deusExSignalData = DeusExSignalData(self.type)
             for obj in self.collidingItems():
                 if type(obj).__name__ == "Player":

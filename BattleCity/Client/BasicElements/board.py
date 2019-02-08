@@ -1,6 +1,7 @@
+from openal import *
+
 from PyQt5 import sip
 from PyQt5.QtCore import Qt, QTimer, QPointF
-from PyQt5.QtMultimedia import QSound
 from PyQt5.QtOpenGL import QGLWidget, QGLFormat
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsRectItem
 
@@ -116,9 +117,21 @@ class Board(QGraphicsView):
         self.playerDeadEmitter.playerDeadSignal.connect(self.playerDeadEmitterHandler)
 
         # explosion sound whenever an enemy is destroyed
-        self.enemyExplosionSound = QSound(self.config.sounds["explosion"])
+        self.enemyExplosionSound = oalOpen(self.config.sounds["explosion"])
         # explosion sound whenever a player is destroyed
-        self.playerExplosionSound = QSound(self.config.sounds["playerExplosion"])
+        self.playerExplosionSound = oalOpen(self.config.sounds["playerExplosion"])
+        # moving sound
+        self.allMovementKeys = [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
+                                Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D]
+        # this flag will prevent attempts of playing a sound when stage or game is over
+        self.dontPlaySounds = False
+        self.movementSound = oalOpen(self.config.sounds["tankMoving"])
+        self.movementSound.set_looping(True)
+        self.movementSound.set_gain(30.0)
+        # not moving sound
+        self.nonMovementSound = oalOpen(self.config.sounds["tankNotMoving"])
+        self.nonMovementSound.set_looping(True)
+        self.nonMovementSound.set_gain(30.0)
 
         # initialize board ui
         self.__init_ui__()
@@ -143,7 +156,7 @@ class Board(QGraphicsView):
         self.gameOverTimer.setTimerType(Qt.PreciseTimer)
         self.gameOverTimer.setInterval(15)
         self.gameOverTimer.timeout.connect(self.animateGameOver)
-        self.gameOverSound = QSound(self.config.sounds["gameOver"])
+        self.gameOverSound = oalOpen(self.config.sounds["gameOver"])
 
         # deus ex spawner and its possible locations
         self.deusExLocations = [
@@ -414,6 +427,26 @@ class Board(QGraphicsView):
                 self.currentEnemyCnt += 1
                 self.enemiesCurrentlyAlive += 1
 
+    def playMovementSounds(self, key, play):
+        if not self.dontPlaySounds:
+            if key in self.allMovementKeys:
+                if play:
+                    if self.nonMovementSound is not None and self.movementSound is not None:
+                        if self.nonMovementSound.get_state() == AL_PLAYING:
+                            self.nonMovementSound.pause()
+                        if self.movementSound.get_state() == AL_PAUSED or \
+                                self.movementSound.get_state() == AL_STOPPED or \
+                                self.movementSound.get_state() == AL_INITIAL:
+                            self.movementSound.play()
+                else:
+                    if self.nonMovementSound is not None and self.movementSound is not None:
+                        if self.movementSound.get_state() == AL_PLAYING:
+                            self.movementSound.pause()
+                        if self.nonMovementSound.get_state() == AL_PAUSED or \
+                                self.nonMovementSound.get_state() == AL_STOPPED or \
+                                self.nonMovementSound.get_state() == AL_INITIAL:
+                            self.nonMovementSound.play()
+
     def keyPressEvent(self, event):
         key = event.key()
         playerWrapper: PlayerWrapper
@@ -422,6 +455,7 @@ class Board(QGraphicsView):
                 playerWrapper.firingNotifier.add_key(key)
             elif key in playerWrapper.movementKeys.values():
                 playerWrapper.movementNotifier.add_key(key)
+        self.playMovementSounds(key, True)
 
     def keyReleaseEvent(self, event):
         key = event.key()
@@ -431,6 +465,7 @@ class Board(QGraphicsView):
                 playerWrapper.firingNotifier.remove_key(key)
             elif key in playerWrapper.movementKeys.values():
                 playerWrapper.movementNotifier.remove_key(key)
+        self.playMovementSounds(key, False)
 
     def updatePosition(self, key):
         playerWrapper: PlayerWrapper
@@ -481,6 +516,8 @@ class Board(QGraphicsView):
         # stop all player notifiers
         playerWrapper.firingNotifier.firingSignal.disconnect()
         playerWrapper.movementNotifier.movementSignal.disconnect()
+        playerWrapper.firingNotifier.emitTimer.stop()
+        playerWrapper.movementNotifier.emitTimer.stop()
         playerWrapper.firingNotifier.thread.terminate()
         playerWrapper.movementNotifier.thread.terminate()
         playerWrapper.player.isAlive = False
@@ -503,18 +540,7 @@ class Board(QGraphicsView):
 
     def stageEnd(self):
         self.stageEndTimer.stop()
-        playerWrapper: PlayerWrapper
-        for playerWrapper in self.playerWrappers.values():
-            # check if player is dead, if not, disconnect from all notifiers
-            # if he's dead, he already disconnected, and is removed from the scene
-            if playerWrapper.player is not None and playerWrapper.player.isAlive:
-                playerWrapper.firingNotifier.firingSignal.disconnect()
-                playerWrapper.movementNotifier.movementSignal.disconnect()
-                playerWrapper.firingNotifier.thread.terminate()
-                playerWrapper.movementNotifier.thread.terminate()
-                self.scene.removeItem(playerWrapper.player)
-        # clear up the map and disable all timers until next stage
-        self.scene.clear()
+        # disable all timers until next stage
         self.animationTimer.stop()
         self.bulletTimer.stop()
         for timer in self.enemyMovementTimers.values():
@@ -522,22 +548,58 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         self.deusExSpawner.spawnTimer.stop()
+        # save data to be sent and clear the players
+        firstPlayerDetails = None
+        firstPlayerTankDetails = None
+        secondPlayerDetails = None
+        secondPlayerTankDetails = None
+        if self.numOfPlayers == 1:
+            firstPlayerDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails()
+            firstPlayerTankDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails
+        else:
+            firstPlayerDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails()
+            firstPlayerTankDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails
+            secondPlayerDetails = self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails()
+            secondPlayerTankDetails = self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            # check if player is dead, if not, disconnect from all notifiers
+            # if he's dead, he already disconnected, and is removed from the scene
+            if playerWrapper.player is not None and playerWrapper.player.isAlive:
+                playerWrapper.firingNotifier.firingSignal.disconnect()
+                playerWrapper.movementNotifier.movementSignal.disconnect()
+                playerWrapper.firingNotifier.emitTimer.stop()
+                playerWrapper.movementNotifier.emitTimer.stop()
+                playerWrapper.firingNotifier.thread.terminate()
+                playerWrapper.movementNotifier.thread.terminate()
+                self.scene.removeItem(playerWrapper.player)
+                sip.delete(playerWrapper.firingNotifier)
+                sip.delete(playerWrapper.movementNotifier)
+                del playerWrapper.firingNotifier
+                del playerWrapper.movementNotifier
+        self.playerWrappers.clear()
+        self.scene.clear()
+        self.dontPlaySounds = True
+        self.nonMovementSound.stop()
+        self.movementSound.stop()
+        self.nonMovementSound.destroy()
+        self.movementSound.destroy()
+        del self.nonMovementSound
+        del self.movementSound
+        # send data
         if self.isOnline:
-            # data = OnlineGameData(self.playerWrappers[self.playerData.playerDetails.id].getPlayerDetails())
-            # self.bridge.onlineGameStageEndSignal.emit(data)
             pass
         else:
             if self.numOfPlayers == 1:
-                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails)
+                data = LocalGameData(firstPlayerDetails,
+                                     firstPlayerTankDetails)
                 self.bridge.localGameStageEndSignal.emit(data)
             else:
-                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails,
-                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
+                data = LocalGameData(firstPlayerDetails,
+                                     firstPlayerTankDetails,
+                                     secondPlayerDetails,
+                                     secondPlayerTankDetails)
                 self.bridge.localGameStageEndSignal.emit(data)
-        self.playerWrappers.clear()
 
     def gameOverHandler(self):
         if self.base.isAlive:
@@ -549,11 +611,20 @@ class Board(QGraphicsView):
                 if playerWrapper.player is not None and playerWrapper.player.isAlive:
                     playerWrapper.firingNotifier.firingSignal.disconnect()
                     playerWrapper.movementNotifier.movementSignal.disconnect()
+                    playerWrapper.firingNotifier.emitTimer.stop()
+                    playerWrapper.movementNotifier.emitTimer.stop()
                     playerWrapper.firingNotifier.thread.terminate()
                     playerWrapper.movementNotifier.thread.terminate()
                     self.scene.removeItem(playerWrapper.player)
-            self.scene.addItem(self.gameOver)
+            self.dontPlaySounds = True
+            self.nonMovementSound.stop()
+            self.movementSound.stop()
+            self.nonMovementSound.destroy()
+            self.movementSound.destroy()
+            del self.nonMovementSound
+            del self.movementSound
             # ANIMATE GAME OVER
+            self.scene.addItem(self.gameOver)
             self.gameOverTimer.start()
             self.gameOverSound.play()
             # disconnect from game over signal so there won't be more animations
@@ -566,7 +637,6 @@ class Board(QGraphicsView):
             self.gameOverHandlerSendData()
 
     def gameOverHandlerSendData(self):
-        self.scene.clear()
         self.animationTimer.stop()
         self.bulletTimer.stop()
         for timer in self.enemyMovementTimers.values():
@@ -574,20 +644,43 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         self.deusExSpawner.spawnTimer.stop()
+        # save data
+        firstPlayerDetails = None
+        firstPlayerTankDetails = None
+        secondPlayerDetails = None
+        secondPlayerTankDetails = None
+        if self.numOfPlayers == 1:
+            firstPlayerDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails()
+            firstPlayerTankDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails
+        else:
+            firstPlayerDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails()
+            firstPlayerTankDetails = self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails
+            secondPlayerDetails = self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails()
+            secondPlayerTankDetails = self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails
         if self.isOnline:
             pass
         else:
             if self.numOfPlayers == 1:
-                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails)
+                data = LocalGameData(firstPlayerDetails,
+                                     firstPlayerTankDetails)
                 self.bridge.localGameOverSignal.emit(data)
             else:
-                data = LocalGameData(self.playerWrappers[self.playerData.firstPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.firstPlayerDetails.id].separateTankDetails,
-                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].getPlayerDetails(),
-                                     self.playerWrappers[self.playerData.secondPlayerDetails.id].separateTankDetails)
+                data = LocalGameData(firstPlayerDetails,
+                                     firstPlayerTankDetails,
+                                     secondPlayerDetails,
+                                     secondPlayerTankDetails)
                 self.bridge.localGameOverSignal.emit(data)
+        playerWrapper: PlayerWrapper
+        for playerWrapper in self.playerWrappers.values():
+            # check if player is dead, if not, disconnect from all notifiers
+            # if he's dead, he already disconnected, and is removed from the scene
+            if playerWrapper.player is not None and playerWrapper.player.isAlive:
+                sip.delete(playerWrapper.firingNotifier)
+                sip.delete(playerWrapper.movementNotifier)
+                del playerWrapper.firingNotifier
+                del playerWrapper.movementNotifier
         self.playerWrappers.clear()
+        self.scene.clear()
 
     def deusExActivate(self, deusExSignalData):
         deusExChoice = None
@@ -618,22 +711,24 @@ class Board(QGraphicsView):
             self.stageEndInitiate()
 
     def playerShield(self, pw=None):
-        pw.player.isShielded = True
-        pw.player.shieldTimer.start()
-        playerShieldTimer = QTimer()
-        playerShieldTimer.setTimerType(Qt.PreciseTimer)
-        playerShieldTimer.setInterval(15000)
-        playerShieldTimer.timeout.connect(lambda: self.afterPlayerShield(pw))
-        playerShieldTimer.start()
-        setattr(self, f"playerShieldTimer{pw.player.id}", playerShieldTimer)
+        if pw.player is not None:
+            pw.player.isShielded = True
+            pw.player.shieldTimer.start()
+            playerShieldTimer = QTimer()
+            playerShieldTimer.setTimerType(Qt.PreciseTimer)
+            playerShieldTimer.setInterval(15000)
+            playerShieldTimer.timeout.connect(lambda: self.afterPlayerShield(pw))
+            playerShieldTimer.start()
+            setattr(self, f"playerShieldTimer{pw.player.id}", playerShieldTimer)
 
     def afterPlayerShield(self, pw=None):
-        pw.player.shieldTimer.stop()
-        pw.player.isShielded = False
-        timer = getattr(self, f"playerShieldTimer{pw.player.id}", None)
-        if timer is not None:
-            timer.stop()
-            del timer
+        if pw.player is not None:
+            pw.player.shieldTimer.stop()
+            pw.player.isShielded = False
+            timer = getattr(self, f"playerShieldTimer{pw.player.id}", None)
+            if timer is not None:
+                timer.stop()
+                del timer
 
     def upgradeBase(self, pw=None):
         for baseBlock in self.baseBlocks:
@@ -656,65 +751,67 @@ class Board(QGraphicsView):
         del self.upgradeBaseTimer
 
     def playerLevelUp(self, pw=None):
-        pw.player.levelUp()
-        # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
-        allObjects = self.scene.items()
-        x1 = pw.player.x()
-        y1 = pw.player.y()
-        x2 = x1 + pw.player.width
-        y2 = y1 + pw.player.height
-        for obj in allObjects:
-            oType = type(obj)
-            if obj != pw.player and oType != QGraphicsRectItem:
-                if type(obj) == Block:
-                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+        if pw.player is not None:
+            pw.player.levelUp()
+            # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
+            allObjects = self.scene.items()
+            x1 = pw.player.x()
+            y1 = pw.player.y()
+            x2 = x1 + pw.player.width
+            y2 = y1 + pw.player.height
+            for obj in allObjects:
+                oType = type(obj)
+                if obj != pw.player and oType != QGraphicsRectItem:
+                    if type(obj) == Block:
+                        if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                            continue
+                    if type(obj) == DeusEx:
                         continue
-                if type(obj) == DeusEx:
-                    continue
-                objParent = obj.parentItem()
-                objX1 = 0
-                objY1 = 0
-                if objParent is None:
-                    objX1 = obj.x()
-                    objY1 = obj.y()
-                else:
-                    objSceneCoords = obj.mapToScene(obj.pos())
-                    objX1 = objSceneCoords.x()
-                    objY1 = objSceneCoords.y()
-                objX2 = objX1 + obj.boundingRect().width()
-                objY2 = objY1 + obj.boundingRect().height()
-                if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
-                    # handle the x axis
-                    deltaX = None
-                    deltaY = None
-                    if x1 < objX1:
-                        deltaX = x2 - objX1
-                        x1 -= deltaX
-                    elif x1 > objX1:
-                        deltaX = objX2 - x1
-                        x1 += deltaX
+                    objParent = obj.parentItem()
+                    objX1 = 0
+                    objY1 = 0
+                    if objParent is None:
+                        objX1 = obj.x()
+                        objY1 = obj.y()
                     else:
-                        deltaX = 0
-                    # handle the y axis
-                    if y1 < objY1:
-                        deltaY = y2 - objY1
-                        y1 -= (deltaY + 1)
-                    elif y1 > objY1:
-                        deltaY = objY2 - y1
-                        y1 += deltaY + 1
-                    else:
-                        deltaY = 0
+                        objSceneCoords = obj.mapToScene(obj.pos())
+                        objX1 = objSceneCoords.x()
+                        objY1 = objSceneCoords.y()
+                    objX2 = objX1 + obj.boundingRect().width()
+                    objY2 = objY1 + obj.boundingRect().height()
+                    if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
+                        # handle the x axis
+                        deltaX = None
+                        deltaY = None
+                        if x1 < objX1:
+                            deltaX = x2 - objX1
+                            x1 -= deltaX
+                        elif x1 > objX1:
+                            deltaX = objX2 - x1
+                            x1 += deltaX
+                        else:
+                            deltaX = 0
+                        # handle the y axis
+                        if y1 < objY1:
+                            deltaY = y2 - objY1
+                            y1 -= (deltaY + 1)
+                        elif y1 > objY1:
+                            deltaY = objY2 - y1
+                            y1 += deltaY + 1
+                        else:
+                            deltaY = 0
 
-                    # draw in paint these situations and you'll understand why i chose this approach
-                    if deltaX > deltaY:
-                        pw.player.setY(y1)
-                    else:
-                        pw.player.setX(x1)
-                    continue
+                        # draw in paint these situations and you'll understand why i chose this approach
+                        if deltaX > deltaY:
+                            pw.player.setY(y1)
+                        else:
+                            pw.player.setX(x1)
+                        continue
 
     def playerLifeUp(self, pw=None):
-        pw.player.lives += 1
-        self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
+        if pw.player is not None:
+            pw.player.lives += 1
+            self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
 
     def stopTheTime(self, pw=None):
         self.enemyShootingTimer.stop()
@@ -735,72 +832,75 @@ class Board(QGraphicsView):
 
     # NEGATIVE
     def playerLevelDown(self, pw=None):
-        pw.player.levelDown()
-        # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
-        allObjects = self.scene.items()
-        x1 = pw.player.x()
-        y1 = pw.player.y()
-        x2 = x1 + pw.player.width
-        y2 = y1 + pw.player.height
-        for obj in allObjects:
-            oType = type(obj)
-            if obj != pw.player and oType != QGraphicsRectItem:
-                if type(obj) == Block:
-                    if obj.type == BlockType.bush or obj.type == BlockType.ice:
+        if pw.player is not None:
+            pw.player.levelDown()
+            # check if player is blocked when his size changed, and if it is, put him somewhere where he's not blocked
+            allObjects = self.scene.items()
+            x1 = pw.player.x()
+            y1 = pw.player.y()
+            x2 = x1 + pw.player.width
+            y2 = y1 + pw.player.height
+            for obj in allObjects:
+                oType = type(obj)
+                if obj != pw.player and oType != QGraphicsRectItem:
+                    if type(obj) == Block:
+                        if obj.type == BlockType.bush or obj.type == BlockType.ice:
+                            continue
+                    if type(obj) == DeusEx:
                         continue
-                if type(obj) == DeusEx:
-                    continue
-                objParent = obj.parentItem()
-                objX1 = 0
-                objY1 = 0
-                if objParent is None:
-                    objX1 = obj.x()
-                    objY1 = obj.y()
-                else:
-                    objSceneCoords = obj.mapToScene(obj.pos())
-                    objX1 = objSceneCoords.x()
-                    objY1 = objSceneCoords.y()
-                objX2 = objX1 + obj.boundingRect().width()
-                objY2 = objY1 + obj.boundingRect().height()
-                if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
-                    # handle the x axis
-                    deltaX = None
-                    deltaY = None
-                    if x1 < objX1:
-                        deltaX = x2 - objX1
-                        x1 -= deltaX
-                    elif x1 > objX1:
-                        deltaX = objX2 - x1
-                        x1 += deltaX
+                    objParent = obj.parentItem()
+                    objX1 = 0
+                    objY1 = 0
+                    if objParent is None:
+                        objX1 = obj.x()
+                        objY1 = obj.y()
                     else:
-                        deltaX = 0
-                    # handle the y axis
-                    if y1 < objY1:
-                        deltaY = y2 - objY1
-                        y1 -= (deltaY + 1)
-                    elif y1 > objY1:
-                        deltaY = objY2 - y1
-                        y1 += deltaY + 1
-                    else:
-                        deltaY = 0
+                        objSceneCoords = obj.mapToScene(obj.pos())
+                        objX1 = objSceneCoords.x()
+                        objY1 = objSceneCoords.y()
+                    objX2 = objX1 + obj.boundingRect().width()
+                    objY2 = objY1 + obj.boundingRect().height()
+                    if x1 < objX2 and x2 > objX1 and y1 < objY2 and y2 > objY1:
+                        # handle the x axis
+                        deltaX = None
+                        deltaY = None
+                        if x1 < objX1:
+                            deltaX = x2 - objX1
+                            x1 -= deltaX
+                        elif x1 > objX1:
+                            deltaX = objX2 - x1
+                            x1 += deltaX
+                        else:
+                            deltaX = 0
+                        # handle the y axis
+                        if y1 < objY1:
+                            deltaY = y2 - objY1
+                            y1 -= (deltaY + 1)
+                        elif y1 > objY1:
+                            deltaY = objY2 - y1
+                            y1 += deltaY + 1
+                        else:
+                            deltaY = 0
 
-                    # draw in paint these situations and you'll understand why i chose this approach
-                    if deltaX > deltaY:
-                        pw.player.setY(y1)
-                    else:
-                        pw.player.setX(x1)
-                    continue
+                        # draw in paint these situations and you'll understand why i chose this approach
+                        if deltaX > deltaY:
+                            pw.player.setY(y1)
+                        else:
+                            pw.player.setX(x1)
+                        continue
 
     def playerLifeDown(self, pw=None):
-        pw.player.lives -= 1
-        if pw.player.lives < 0:
-            pw.player.lives = 0
-        self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
+        if pw.player is not None:
+            pw.player.lives -= 1
+            if pw.player.lives < 0:
+                pw.player.lives = 0
+            self.hudPlayersLives[pw.player.id].updateLives(pw.player.lives)
 
     def playerLosePoints(self, pw=None):
-        pw.player.points -= 1000
-        if pw.player.points < 0:
-            pw.player.points = 0
+        if pw.player is not None:
+            pw.player.points -= 1000
+            if pw.player.points < 0:
+                pw.player.points = 0
 
     def playerCantMove(self, pw):
         pw.firingNotifier.emitTimer.stop()
@@ -864,3 +964,12 @@ class Board(QGraphicsView):
         self.enemiesCurrentlyAlive = 0
         del self.deusExSpawner
         self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)
+        # create movement sounds
+        self.dontPlaySounds = False
+        self.movementSound = oalOpen(self.config.sounds["tankMoving"])
+        self.movementSound.set_looping(True)
+        self.movementSound.set_gain(30)
+        # not moving sound
+        self.nonMovementSound = oalOpen(self.config.sounds["tankNotMoving"])
+        self.nonMovementSound.set_looping(True)
+        self.nonMovementSound.set_gain(30)

@@ -1,6 +1,7 @@
+from openal import *
+
 from PyQt5 import sip
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget, QStackedWidget
 
 import sys
@@ -45,7 +46,7 @@ class MainWindow(QMainWindow):
         self.endOfStageTwoPlayers = None
         self.winnerScreen = WinnerScreen(self.config, 1, 0, 0, 0)
         self.winnerScreen.winnerAnimationOverSignal.connect(self.goToMainMenu)
-        self.gameStartSound = QSound(self.config.sounds["gameStart"])
+        self.gameStartSound = oalOpen(self.config.sounds["gameStart"])
         self.__init_ui__()
         self.show()
 
@@ -197,7 +198,6 @@ class MainWindow(QMainWindow):
             self.central_widget.setCurrentWidget(self.winnerScreen)
             self.winnerScreen.animate()
 
-
     def getTheWinner(self, localGameData):
         if self.currentGameTypeData.numOfPlayers == 1:
             return 1
@@ -215,6 +215,9 @@ class MainWindow(QMainWindow):
                 return 2
 
     def goToMainMenu(self):
+        # reset the game
+        self.currentStage = 1
+        self.currentMap = 1
         self.winnerScreen.resetItems()
         self.central_widget.setCurrentWidget(self.mainMenu)
 
@@ -230,6 +233,11 @@ class MainWindow(QMainWindow):
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2,
                   (screen.height() - size.height()) / 2 - 100)
+
+    def closeEvent(self, *args, **kwargs):
+        oalQuit()
+        sip.delete(self)
+        del self
 
 
 if __name__ == '__main__':
