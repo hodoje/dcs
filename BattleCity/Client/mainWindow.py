@@ -1,3 +1,5 @@
+import datetime
+
 from openal import *
 
 from PyQt5 import sip
@@ -47,6 +49,10 @@ class MainWindow(QMainWindow):
         self.winnerScreen = WinnerScreen(self.config, 1, 0, 0, 0)
         self.winnerScreen.winnerAnimationOverSignal.connect(self.goToMainMenu)
         self.gameStartSound = oalOpen(self.config.sounds["gameStart"])
+        self.newStageTimer = QTimer()
+        self.newStageTimer.setTimerType(Qt.PreciseTimer)
+        self.newStageTimer.setInterval(3000)
+        self.newStageTimer.timeout.connect(self.newStage)
         self.__init_ui__()
         self.show()
 
@@ -61,21 +67,19 @@ class MainWindow(QMainWindow):
         self.center()
 
     def startRound(self, gameData):
-        if self.board is None:
-            self.board = Board(self,
-                               self.config,
-                               self.currentMap,
-                               self.currentStage,
-                               self.bridge,
-                               self.currentGameTypeData,
-                               gameData)
-            self.board.setFocusPolicy(Qt.StrongFocus)
-            self.board.setFocus()
-            self.central_widget.addWidget(self.board)
-        else:
-            self.board.setFocusPolicy(Qt.StrongFocus)
-            self.board.setFocus()
-            self.board.startNewStage(self.currentMap, self.currentStage, self.currentGameTypeData, gameData)
+        if self.board is not None:
+            sip.delete(self.board)
+            del self.board
+        self.board = Board(self,
+                          self.config,
+                          self.currentMap,
+                          self.currentStage,
+                          self.bridge,
+                          self.currentGameTypeData,
+                          gameData)
+        self.board.setFocusPolicy(Qt.StrongFocus)
+        self.board.setFocus()
+        self.central_widget.addWidget(self.board)
         self.central_widget.setCurrentWidget(self.board)
         self.gameStartSound.play()
         # reset player stats and end stage data if needed
@@ -146,10 +150,6 @@ class MainWindow(QMainWindow):
             self.endOfStageTwoPlayers.animate()
         self.updateMapAndStage()
         self.currentGameData = localGameStageEndData
-        self.newStageTimer = QTimer()
-        self.newStageTimer.setTimerType(Qt.PreciseTimer)
-        self.newStageTimer.setInterval(3000)
-        self.newStageTimer.timeout.connect(self.newStage)
         self.newStageTimer.start()
 
     def localGameOverHandler(self, localGameData: LocalGameData):

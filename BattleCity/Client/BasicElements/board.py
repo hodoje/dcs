@@ -28,6 +28,8 @@ from Player.playerWrapper import PlayerWrapper
 from DeusEx.deusex import DeusEx
 from DeusEx.deusexTypes import DeusExTypes
 
+from BasicElements.movementSoundHandler import MovementSoundHandler
+
 
 class Board(QGraphicsView):
     def __init__(self, parent, config, currentMap, currentStage, bridge, gameTypeData, playerData):
@@ -121,14 +123,14 @@ class Board(QGraphicsView):
         self.enemyExplosionSound = oalOpen(self.config.sounds["explosion"])
         # explosion sound whenever a player is destroyed
         self.playerExplosionSound = oalOpen(self.config.sounds["playerExplosion"])
-        # # moving sound
-        self.movementSound = oalOpen(self.config.sounds["tankMoving"])
-        self.movementSound.set_looping(True)
-        self.movementSound.set_gain(30.0)
-        # not moving sound
-        self.nonMovementSound = oalOpen(self.config.sounds["tankNotMoving"])
-        self.nonMovementSound.set_looping(True)
-        self.nonMovementSound.set_gain(30.0)
+        # # # moving sound
+        # self.movementSound = oalOpen(self.config.sounds["tankMoving"])
+        # self.movementSound.set_looping(True)
+        # self.movementSound.set_gain(30.0)
+        # # not moving sound
+        # self.nonMovementSound = oalOpen(self.config.sounds["tankNotMoving"])
+        # self.nonMovementSound.set_looping(True)
+        # self.nonMovementSound.set_gain(30.0)
 
         # initialize board ui
         self.__init_ui__()
@@ -193,6 +195,8 @@ class Board(QGraphicsView):
         self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)
 
         self.generateEtd()
+        self.movementSoundHandler = MovementSoundHandler(self.config)
+        self.movementSoundHandler.activate()
         self.generatePlayers()
 
     # UI INITIALIZATION
@@ -292,71 +296,77 @@ class Board(QGraphicsView):
         else:
             for i in range(self.numOfPlayers):
                 if i == 0:
+                    firingKey = Qt.Key_Space
+                    movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
+                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                     if self.playerData.firstPlayerDetails.isAlive:
-                        firingKey = Qt.Key_Space
-                        movementKeys = {"Up": Qt.Key_Up, "Down": Qt.Key_Down, "Left": Qt.Key_Left, "Right": Qt.Key_Right}
-                        movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                         movementNotifier.movementSignal.connect(self.updatePosition)
-                        firingNotifier = FiringNotifier(50)
+                    firingNotifier = FiringNotifier(50)
+                    if self.playerData.firstPlayerDetails.isAlive:
                         firingNotifier.firingSignal.connect(self.fireCanon)
-                        playerDetails = self.playerData.firstPlayerDetails
-                        playerWrapper = PlayerWrapper(playerDetails,
-                                                      self.config,
-                                                      self.playerColors[i],
-                                                      firingKey,
-                                                      movementKeys,
-                                                      firingNotifier,
-                                                      movementNotifier,
-                                                      self.playerLevels,
-                                                      self.field,
-                                                      self.killEmitter,
-                                                      self.bulletTimer,
-                                                      Enemy,
-                                                      self.animationTimer,
-                                                      self.playerDeadEmitter,
-                                                      self.gameOverEmitter)
+                    playerDetails = self.playerData.firstPlayerDetails
+                    playerWrapper = PlayerWrapper(playerDetails,
+                                                  self.config,
+                                                  self.playerColors[i],
+                                                  firingKey,
+                                                  movementKeys,
+                                                  firingNotifier,
+                                                  movementNotifier,
+                                                  self.playerLevels,
+                                                  self.field,
+                                                  self.killEmitter,
+                                                  self.bulletTimer,
+                                                  Enemy,
+                                                  self.animationTimer,
+                                                  self.playerDeadEmitter,
+                                                  self.gameOverEmitter)
+                    if self.playerData.firstPlayerDetails.isAlive:
                         playerWrapper.player.canShootSignal.connect(self.allowFiring)
                         startingPos = QPointF(
                             self.fieldCenterX - self.base.boundingRect().width() / 2 - self.base.boundingRect().width() * 2,
                             self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                         playerWrapper.player.startingPos = startingPos
-                        self.playerWrappers[playerDetails.id] = playerWrapper
                         self.scene.addItem(playerWrapper.player)
                         self.playersAlive += 1
                         playerWrapper.player.setPos(startingPos)
+                        playerWrapper.movementNotifier.movementSignal.connect(self.movementSoundHandler.playMovementSound)
+                    self.playerWrappers[playerDetails.id] = playerWrapper
                 elif i == 1:
+                    firingKey = Qt.Key_J
+                    movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
+                    movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                     if self.playerData.secondPlayerDetails.isAlive:
-                        firingKey = Qt.Key_J
-                        movementKeys = {"Up": Qt.Key_W, "Down": Qt.Key_S, "Left": Qt.Key_A, "Right": Qt.Key_D}
-                        movementNotifier = MovementNotifier(self.config.playerMovementSpeed)
                         movementNotifier.movementSignal.connect(self.updatePosition)
-                        firingNotifier = FiringNotifier(50)
+                    firingNotifier = FiringNotifier(50)
+                    if self.playerData.secondPlayerDetails.isAlive:
                         firingNotifier.firingSignal.connect(self.fireCanon)
-                        playerDetails = self.playerData.secondPlayerDetails
-                        playerWrapper = PlayerWrapper(playerDetails,
-                                                      self.config,
-                                                      self.playerColors[i],
-                                                      firingKey,
-                                                      movementKeys,
-                                                      firingNotifier,
-                                                      movementNotifier,
-                                                      self.playerLevels,
-                                                      self.field,
-                                                      self.killEmitter,
-                                                      self.bulletTimer,
-                                                      Enemy,
-                                                      self.animationTimer,
-                                                      self.playerDeadEmitter,
-                                                      self.gameOverEmitter)
+                    playerDetails = self.playerData.secondPlayerDetails
+                    playerWrapper = PlayerWrapper(playerDetails,
+                                                  self.config,
+                                                  self.playerColors[i],
+                                                  firingKey,
+                                                  movementKeys,
+                                                  firingNotifier,
+                                                  movementNotifier,
+                                                  self.playerLevels,
+                                                  self.field,
+                                                  self.killEmitter,
+                                                  self.bulletTimer,
+                                                  Enemy,
+                                                  self.animationTimer,
+                                                  self.playerDeadEmitter,
+                                                  self.gameOverEmitter)
+                    if self.playerData.secondPlayerDetails.isAlive:
                         playerWrapper.player.canShootSignal.connect(self.allowFiring)
                         startingPos = QPointF(
                             self.fieldCenterX + self.base.boundingRect().width() / 2 + self.base.boundingRect().width(),
                             self.fieldBottom - playerWrapper.player.boundingRect().height() - 5)
                         playerWrapper.player.startingPos = startingPos
-                        self.playerWrappers[playerDetails.id] = playerWrapper
                         self.scene.addItem(playerWrapper.player)
                         self.playersAlive += 1
                         playerWrapper.player.setPos(startingPos)
+                        playerWrapper.movementNotifier.movementSignal.connect(self.movementSoundHandler.playMovementSound)
+                    self.playerWrappers[playerDetails.id] = playerWrapper
 
     def generateEtd(self):
         # generate enemy details
@@ -434,15 +444,6 @@ class Board(QGraphicsView):
                     playerWrapper.firingNotifier.add_key(key)
                 elif key in playerWrapper.movementKeys.values():
                     playerWrapper.movementNotifier.add_key(key)
-                    if playedSoundCnt == 0:
-                        if self.nonMovementSound is not None and self.movementSound is not None:
-                            if self.nonMovementSound.get_state() == AL_PLAYING:
-                                self.nonMovementSound.pause()
-                            if self.movementSound.get_state() == AL_PAUSED or \
-                                    self.movementSound.get_state() == AL_STOPPED or \
-                                    self.movementSound.get_state() == AL_INITIAL:
-                                self.movementSound.play()
-                        playedSoundCnt += 1
 
     def keyReleaseEvent(self, event):
         playedSoundCnt = 0
@@ -454,15 +455,6 @@ class Board(QGraphicsView):
                     playerWrapper.firingNotifier.remove_key(key)
                 elif key in playerWrapper.movementKeys.values():
                     playerWrapper.movementNotifier.remove_key(key)
-                    if playedSoundCnt == 0:
-                        if self.nonMovementSound is not None and self.movementSound is not None:
-                            if self.movementSound.get_state() == AL_PLAYING:
-                                self.movementSound.pause()
-                            if self.nonMovementSound.get_state() == AL_PAUSED or \
-                                    self.nonMovementSound.get_state() == AL_STOPPED or \
-                                    self.nonMovementSound.get_state() == AL_INITIAL:
-                                self.nonMovementSound.play()
-                        playedSoundCnt += 1
 
     def updatePosition(self, key):
         playerWrapper: PlayerWrapper
@@ -536,8 +528,9 @@ class Board(QGraphicsView):
     def stageEnd(self):
         self.stageEndTimer.stop()
         # disable all timers until next stage
-        self.nonMovementSound.stop()
-        self.movementSound.stop()
+        # self.nonMovementSound.stop()
+        # self.movementSound.stop()
+        self.movementSoundHandler.deactivate()
         self.animationTimer.stop()
         self.bulletTimer.stop()
         for timer in self.enemyMovementTimers.values():
@@ -545,6 +538,25 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         self.deusExSpawner.spawnTimer.stop()
+        # stop any deus ex activity timer that is active
+        for pw in self.playerWrappers.values():
+            shieldTimer = getattr(self, f"playerShieldTimer{pw.player.id}", None)
+            if shieldTimer is not None:
+                shieldTimer.stop()
+                del shieldTimer
+            cantMoveTimer = getattr(self, f"playerCantMoveTimer{pw.player.id}", None)
+            if cantMoveTimer is not None:
+                cantMoveTimer.stop()
+                del cantMoveTimer
+        upgradeBaseTimer = getattr(self, f"upgradeBaseTimer", None)
+        if upgradeBaseTimer is not None:
+            upgradeBaseTimer.stop()
+        stopTheTimeTimer = getattr(self, f"stopTheTimeTimer", None)
+        if stopTheTimeTimer is not None:
+            stopTheTimeTimer.stop()
+        removeBaseShieldTimer = getattr(self, f"removeBaseShieldTimer", None)
+        if removeBaseShieldTimer is not None:
+            removeBaseShieldTimer.stop()
         # save data to be sent back to main window and disconnect and clear the players
         firstPlayerDetails = None
         firstPlayerTankDetails = None
@@ -561,7 +573,7 @@ class Board(QGraphicsView):
         playerWrapper: PlayerWrapper
         for playerWrapper in self.playerWrappers.values():
             # check if player is dead, if not, disconnect from all notifiers
-            # if he's dead, he already disconnected, and is removed from the scene
+            # if he's dead, he already disconnected, and is already removed from the scene
             if playerWrapper.player is not None and playerWrapper.player.isAlive:
                 playerWrapper.firingNotifier.firingSignal.disconnect()
                 playerWrapper.movementNotifier.movementSignal.disconnect()
@@ -593,8 +605,10 @@ class Board(QGraphicsView):
 
     def gameOverHandler(self):
         if self.base.isAlive:
-            self.nonMovementSound.stop()
-            self.movementSound.stop()
+            # self.nonMovementSound.stop()
+            # self.movementSound.stop()
+            self.movementSoundHandler.deactivate()
+            self.deusExSpawner.spawnTimer.stop()
             self.isGameOver = True
             self.base.destroyBase()
             playerWrapper: PlayerWrapper
@@ -632,6 +646,25 @@ class Board(QGraphicsView):
         self.enemySpawnTimer.stop()
         self.enemyShootingTimer.stop()
         self.deusExSpawner.spawnTimer.stop()
+        # stop any deus ex activity timer that is active
+        for pw in self.playerWrappers.values():
+            shieldTimer = getattr(self, f"playerShieldTimer{pw.player.id}", None)
+            if shieldTimer is not None:
+                shieldTimer.stop()
+                del shieldTimer
+            cantMoveTimer = getattr(self, f"playerCantMoveTimer{pw.player.id}", None)
+            if cantMoveTimer is not None:
+                cantMoveTimer.stop()
+                del cantMoveTimer
+        upgradeBaseTimer = getattr(self, f"upgradeBaseTimer", None)
+        if upgradeBaseTimer is not None:
+            upgradeBaseTimer.stop()
+        stopTheTimeTimer = getattr(self, f"stopTheTimeTimer", None)
+        if stopTheTimeTimer is not None:
+            stopTheTimeTimer.stop()
+        removeBaseShieldTimer = getattr(self, f"removeBaseShieldTimer", None)
+        if removeBaseShieldTimer is not None:
+            removeBaseShieldTimer.stop()
         # save data
         firstPlayerDetails = None
         firstPlayerTankDetails = None
@@ -948,6 +981,7 @@ class Board(QGraphicsView):
         self.enemiesCurrentlyAlive = 0
         del self.deusExSpawner
         self.deusExSpawner = DeusExSpawner(self.scene, self.config, 15000, self.deusExActivate, self.deusExLocations)
+        self.movementSoundHandler.activate()
         # # # start movement and non movement sounds
         # self.nonMovementSound.play()
         # self.movementSound.play()

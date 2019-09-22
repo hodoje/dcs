@@ -9,9 +9,10 @@ class MovementNotifier(QObject):
     def __init__(self, timerInterval):
         super().__init__()
         self.keys = []
+        self.isEmitting = False
+        self.timerInterval = timerInterval
 
         self.thread = QThread()
-        self.timerInterval = timerInterval
         self.emitTimer = QTimer()
         self.emitTimer.setTimerType(Qt.PreciseTimer)
         self.emitTimer.timeout.connect(self.emit)
@@ -25,6 +26,7 @@ class MovementNotifier(QObject):
 
     def remove_key(self, key):
         if key in self.keys:
+            self.isEmitting = False
             self.keys.remove(key)
 
     def emit(self):
@@ -36,4 +38,5 @@ class MovementNotifier(QObject):
             # NOTE: when holding a key (although add_key is called on the board, only one element will be
             # in the self.keys list)
             mainKey = keys[0]
+            self.isEmitting = True
             self.movementSignal.emit(mainKey)
