@@ -96,7 +96,7 @@ class Player(QGraphicsObject):
         self.shieldTimer.timeout.connect(self.shieldUi)
         self.m_boundingRect = QRectF(0, 0, self.width, self.height)
         # setting transform origin point to center of the player so the rotation will be in regard to the center
-        self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
+        self.setTransformOriginPoint(QPoint(int(self.boundingRect().width() / 2), int(self.boundingRect().height() / 2)))
 
     # override default bounding rect
     def boundingRect(self):

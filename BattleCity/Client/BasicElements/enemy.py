@@ -73,7 +73,7 @@ class Enemy(QGraphicsItem):
         self.width = self.textures[0].width()
         self.height = self.textures[0].height()
         self.m_boundingRect = QRectF(0, 0, self.width, self.height)
-        self.setTransformOriginPoint(QPoint(self.boundingRect().width() / 2, self.boundingRect().height() / 2))
+        self.setTransformOriginPoint(QPoint(int(self.boundingRect().width() / 2), int(self.boundingRect().height() / 2)))
         self.rotate(self.canonDirection)
 
     # override default bounding rect

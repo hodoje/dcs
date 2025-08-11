@@ -1,4 +1,5 @@
 # dcs
+
 Faculty subject - Distributed Computer Systems
 
 # Assignment text
@@ -17,7 +18,6 @@ Faculty subject - Distributed Computer Systems
     - At the beginning of the level there are 6 enemy tanks
     - They move randomly between the blocks
     - Randomly, independently from each other, they shoot projectiles
-    
 - **Rules:**
   - There are infinite number of levels
   - If a projectile hits a player, he loses a life
@@ -28,9 +28,26 @@ Faculty subject - Distributed Computer Systems
   - For passing to the next level, players need to destroy all the enemy tanks
   - The winner is the player that survives the most amount of time
   - The game is finished either when all the players are dead or the enemies have destroyed the base
-  
 - For realization use Python3, PyQt5, multiprocessing. Work in teams of 2-4 members. Write a documentation in which there is a general description of the game and rezime all the pros and cons of using Python language, PyQt5 framework and paralelization.
 - Demo at the link: https://www.youtube.com/watch?v=MPsA5PtfdL0
 
 - **NOTE**:
   - Assignment text is subjectable to changes (new requirements).
+
+How to run the Client (Battle City Game)
+
+1. Setup Python Virtual Environment (venv)
+   Open a terminal in the Client directory and run:
+
+2. Activate the Virtual Environment
+   On Windows PowerShell:
+
+3. Install Dependencies
+   Install required packages using pip:
+
+4. Run the Game
+   Start the game with:
+
+If you encounter any issues, make sure you are using Python 3.13 or compatible, and that all dependencies are installed in the virtual environment.
+
+All required packages are listed in requirements.txt.
